@@ -8,6 +8,9 @@ from django.utils.translation import ugettext as translate
 class Group(models.Model):
     name = models.CharField(max_length=128, unique=True)
 
+    class Meta:
+        ordering = ["name"]
+
     def __str__(self):
         return self.name
 
@@ -16,8 +19,12 @@ class Invitee(models.Model):
     email = models.EmailField()
     group = models.ForeignKey(Group, on_delete=models.SET_NULL, null=True, blank=True)
 
+    class Meta:
+        ordering = ["email"]
+
     def __str__(self):
         return self.email
+
 
 class Booking(models.Model):
     email = models.EmailField(null=False, blank=True)
@@ -44,6 +51,9 @@ class Booking(models.Model):
         blank=True,
         db_index=True,
     )
+
+    class Meta:
+        ordering = ["-created_at"]
 
     def __str__(self):
         return self.spot_start
