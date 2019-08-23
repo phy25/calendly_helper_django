@@ -28,10 +28,10 @@ from django.dispatch import receiver
 from constance.signals import config_updated
 
 admin.site.site_header = config.SITE_TITLE
-admin.site.index_title = config.SITE_TITLE
+admin.site.site_title  = config.SITE_TITLE
 
 @receiver(config_updated)
 def constance_updated(sender, key, old_value, new_value, **kwargs):
     if key == 'SITE_TITLE':
         admin.site.site_header = new_value
-        admin.site.index_title = new_value
+        admin.site.site_title  = new_value
