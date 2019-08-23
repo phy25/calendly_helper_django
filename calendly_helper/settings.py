@@ -31,12 +31,15 @@ ALLOWED_HOSTS = []
 # Application definition
 
 INSTALLED_APPS = [
+    'bookings.apps.BookingsConfig',
     'django.contrib.admin',
     'django.contrib.auth',
     'django.contrib.contenttypes',
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
+    'constance',
+    'constance.backends.database',
 ]
 
 MIDDLEWARE = [
@@ -105,7 +108,7 @@ AUTH_PASSWORD_VALIDATORS = [
 
 LANGUAGE_CODE = 'en-us'
 
-TIME_ZONE = 'UTC'
+TIME_ZONE = 'America/New_York'
 
 USE_I18N = True
 
@@ -119,9 +122,18 @@ USE_TZ = True
 
 STATIC_URL = '/static/'
 
+# Constance Config Options
+CONSTANCE_BACKEND = 'constance.backends.database.DatabaseBackend'
+
+CONSTANCE_CONFIG = {
+    'ANNOUNCEMENT': ('', 'HTML announcement on student report', str),
+    'SITE_TITLE': ('Calendly Tools', 'Site Title', str),
+}
+
 # Configure Django App for Heroku.
 import django_heroku
 django_heroku.settings(locals())
 
 if 'DYNO' in os.environ:
     TEST_RUNNER = 'django_heroku.HerokuDiscoverRunner'
+    DEBUG = False
