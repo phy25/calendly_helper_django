@@ -128,6 +128,7 @@ CONSTANCE_BACKEND = 'constance.backends.database.DatabaseBackend'
 CONSTANCE_CONFIG = {
     'ANNOUNCEMENT': ('', 'HTML announcement on student report', str),
     'SITE_TITLE': ('Calendly Tools', 'Site Title', str),
+    'SIGN_UP_LINK': ('', 'Sign up link', str),
 }
 
 # Configure Django App for Heroku.

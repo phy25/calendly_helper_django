@@ -16,7 +16,22 @@ Including another URLconf
 from django.contrib import admin
 from django.urls import include, path
 
+from constance import config
+
 urlpatterns = [
     path('', include('bookings.urls')),
     path('admin/', admin.site.urls),
 ]
+
+
+from django.dispatch import receiver
+from constance.signals import config_updated
+
+admin.site.site_header = config.SITE_TITLE
+admin.site.index_title = config.SITE_TITLE
+
+@receiver(config_updated)
+def constance_updated(sender, key, old_value, new_value, **kwargs):
+    if key == 'SITE_TITLE':
+        admin.site.site_header = new_value
+        admin.site.index_title = new_value
