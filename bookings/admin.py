@@ -4,6 +4,30 @@ from django.contrib import admin
 from .models import Group, Booking, Invitee
 
 
+from import_export import fields, resources
+from import_export.widgets import ForeignKeyWidget
+from import_export.admin import ImportExportModelAdmin
+
+class GroupCreationWidget(ForeignKeyWidget):
+    def clean(self, value, row=None, *args, **kwargs):
+        return self.model.objects.get_or_create(name=value)[0] if value else None
+
+
+class InviteeIEResource(resources.ModelResource):
+    email = fields.Field(column_name='email', attribute='email')
+    group = fields.Field(
+        column_name='group',
+        attribute='group',
+        widget=GroupCreationWidget(Group, 'name')
+    )
+
+    class Meta:
+        model = Invitee
+        fields = ('email', 'group', )
+        export_order = ('email', 'group', )
+        import_id_fields = ('email', )
+
+
 class InviteeInline(admin.TabularInline):
     model = Invitee
     extra = 2
@@ -17,7 +41,8 @@ class GroupAdmin(admin.ModelAdmin):
     inlines = [InviteeInline]
 
 
-class InviteeAdmin(admin.ModelAdmin):
+class InviteeAdmin(ImportExportModelAdmin):
+    resource_class = InviteeIEResource
     list_display = ('email', 'group_name')
 
     def group_name(self, obj):

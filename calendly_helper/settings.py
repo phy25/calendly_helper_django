@@ -40,6 +40,7 @@ INSTALLED_APPS = [
     'django.contrib.staticfiles',
     'constance',
     'constance.backends.database',
+    'import_export',
 ]
 
 MIDDLEWARE = [
@@ -57,7 +58,7 @@ ROOT_URLCONF = 'calendly_helper.urls'
 TEMPLATES = [
     {
         'BACKEND': 'django.template.backends.django.DjangoTemplates',
-        'DIRS': [],
+        'DIRS': [os.path.join(BASE_DIR, 'templates')],
         'APP_DIRS': True,
         'OPTIONS': {
             'context_processors': [
@@ -130,6 +131,10 @@ CONSTANCE_CONFIG = {
     'SITE_TITLE': ('Calendly Tools', 'Site Title', str),
     'SIGN_UP_LINK': ('', 'Sign up link', str),
 }
+
+
+# import-export
+IMPORT_EXPORT_IMPORT_PERMISSION_CODE = 'add'
 
 # Configure Django App for Heroku.
 import django_heroku
