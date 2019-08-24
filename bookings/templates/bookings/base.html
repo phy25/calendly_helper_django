@@ -1,0 +1,24 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" /><title>{% block title %}{{ config.SITE_TITLE }}{% endblock %}</title>
+<meta name="viewport" content="width=device-width" />
+<link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/css/bootstrap.min.css" integrity="sha384-ggOyR0iXCbMQv3Xipma34MD+dH/1fQ784/j6cY/iJTQUOhcWr7x9JvoRxT2MZw1T" crossorigin="anonymous">
+</head>
+<body>
+<div class="container">
+  <div class="d-flex flex-column flex-md-row align-items-center p-3 px-md-4 mb-3 border-bottom">
+    <h5 class="my-0 mr-md-auto font-weight-normal">{{ config.SITE_TITLE }}</h5>
+    <nav class="my-2 my-md-0 align-items-center row">
+{% block navbar %}
+      {{ config.CUSTOM_NAVLINK|safe }}
+{% endblock %}
+    </nav>
+  </div>
+
+  {% block content %}
+  {% endblock %}
+
+  <p class="text-muted"><small>{% block footer %}&copy; Hongyu Pan.{% endblock %}</small></p>
+</div>
+</body></html>

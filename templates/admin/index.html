@@ -15,17 +15,8 @@
 {% if app_list %}
         <div class="app-quickstart module">
             <table>
-                <caption>Shortcuts</caption>
-                <tr class="model-sc-invitees">
-                    <th scope="row"><a href="bookings/invitee/">Manage Invitees</a></th>
-                    <td>&nbsp;</td>
-                    <td>&nbsp;</td>
-                </tr>
-                <tr class="model-sc-bookings">
-                    <th scope="row"><a href="bookings/booking/">Manage Bookings</a></th>
-                    <td>&nbsp;</td>
-                    <td>&nbsp;</td>
-                </tr>
+                <caption>{% trans "Shortcuts" %}</caption>
+                {% include 'admin/index_shortcuts.html' %}
             </table>
         </div>
     {% for app in app_list %}

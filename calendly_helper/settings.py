@@ -11,6 +11,7 @@ https://docs.djangoproject.com/en/2.2/ref/settings/
 """
 
 import os
+import hashlib
 
 # Build paths inside the project like this: os.path.join(BASE_DIR, ...)
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
@@ -62,6 +63,7 @@ TEMPLATES = [
         'APP_DIRS': True,
         'OPTIONS': {
             'context_processors': [
+                'constance.context_processors.config',
                 'django.template.context_processors.debug',
                 'django.template.context_processors.request',
                 'django.contrib.auth.context_processors.auth',
@@ -127,9 +129,11 @@ STATIC_URL = '/static/'
 CONSTANCE_BACKEND = 'constance.backends.database.DatabaseBackend'
 
 CONSTANCE_CONFIG = {
-    'ANNOUNCEMENT': ('', 'HTML announcement on student report', str),
+    'ANNOUNCEMENT': ('''<p class="mb-1">It may take some seconds to reflect your latest booking, while invalid bookings won\'t show up here.</p>
+      <p class="mb-0" style="line-height:1.2"><small class="text-muted">"<strong>DOUBLE BOOKING</strong>" means that the group has later bookings that will be released - usually time here will not change.</small></p>''', 'HTML announcement on student report', str),
     'SITE_TITLE': ('Calendly Tools', 'Site Title', str),
-    'SIGN_UP_LINK': ('', 'Sign up link', str),
+    'CUSTOM_NAVLINK': ('<a class="btn btn-outline-primary btn-sm ml-3" href="">Sign up</a>', 'Custom Navbar Link HTML', str),
+    'WEBHOOK_TOKEN': (hashlib.md5(SECRET_KEY.encode()).hexdigest()[0:16], 'Secret Token', str)
 }
 
 
@@ -143,3 +147,4 @@ django_heroku.settings(locals())
 if 'DYNO' in os.environ:
     TEST_RUNNER = 'django_heroku.HerokuDiscoverRunner'
     DEBUG = False
+    SECURE_SSL_REDIRECT = True
