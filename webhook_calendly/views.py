@@ -32,8 +32,9 @@ def webhook_post(request: HttpRequest):
             obj.calendly_data = payload
             obj.save()
         elif j['event'] == 'invitee.created':
-            # Go ahead to create new one
-            raise Booking.DoesNotExist
+            obj = Booking.objects.get(calendly_uuid=payload.invitee.uuid)
+            # if exists, raise error
+            return HttpResponse(status=409)
         else:
             # Don't know what to do
             return HttpResponseBadRequest()
