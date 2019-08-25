@@ -17,13 +17,12 @@
 {% block breadcrumbs %}
 <div class="breadcrumbs">
 <a href="{% url 'admin:index' %}">{% trans 'Home' %}</a>
-&rsaquo; <a href="{% url 'admin:index' %}">Calendly Hooks</a>
+&rsaquo; <a href="{% url 'list_hooks' %}">{{ title }}</a>
 </div>
 {% endblock %}
 
 {% block content %}
 <div id="content-main">
-    <h1>Calendly Hooks Management</h1>
     <ul class="object-tools">
         <li>
             <form action="{% url 'add_hook' %}" method="post">
@@ -33,19 +32,22 @@
         </li>
     </ul>
     {% if hooks_list %}
+        <p>Hooks on your Calendly account:</p>
         <ul>
         {% for h in hooks_list %}
             <li>
                 <form action="{% url 'remove_hook' h.id %}" method="post">
                     {% csrf_token %}
-                    {{ h.attributes.url }} ({{ h.attributes.state }})
+                    {{ h.attributes.url }}
+                    (created at {{ h.attributes.created_at|date }} {{ h.attributes.created_at|time }},
+                    {{ h.attributes.state }})
                     <button type="submit">Delete</button>
                 </form>
             </li>
         {% endfor %}
         </ul>
     {% else %}
-        <p>Cannot find any hooks on Calendly.</p>
+        <p>Cannot find any hooks on your Calendly account.</p>
     {% endif %}
 </div>
 {% endblock %}

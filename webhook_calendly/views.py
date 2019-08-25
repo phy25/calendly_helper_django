@@ -10,9 +10,11 @@ from django.contrib.auth import REDIRECT_FIELD_NAME
 from constance import config
 import json
 import urllib.request
+from django.utils.dateparse import parse_datetime
 from urllib.parse import urlencode
 from django.views.decorators.csrf import csrf_exempt
 from django.views import generic
+from django.contrib import admin
 
 from bookings.models import Booking
 
@@ -101,8 +103,18 @@ class ListHooksView(generic.ListView):
             text = f.read().decode()
             j = json.loads(text)
             if j['data']:
+                for i in j['data']:
+                    i['attributes']['created_at'] = parse_datetime(i['attributes']['created_at'])
                 return j['data']
         return []
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context['title'] = 'Calendly Hooks'
+        context['site_title'] = admin.site.site_title
+        context['site_header'] = admin.site.site_header
+        return context
+
 
 @superuser_required
 @require_POST
