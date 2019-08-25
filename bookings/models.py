@@ -32,7 +32,7 @@ class Booking(models.Model):
     spot_end = models.DateTimeField()
     booked_at = models.DateTimeField(default=timezone.now)
     is_approved = models.BooleanField(default=False)
-    approved_for_group = models.ForeignKey(Group, on_delete=models.PROTECT, null=True, blank=True)
+    approved_for_group = models.ForeignKey(Group, on_delete=models.PROTECT, null=True, blank=True, db_index=True)
     is_cancelled = models.BooleanField(default=False)
     calendly_data = JSONField()
     calendly_uuid = models.CharField(max_length=32, default='', unique=True)
@@ -43,6 +43,7 @@ class Booking(models.Model):
         null=True,
         blank=True,
         db_index=True,
+        auto_now_add=True,
     )
 
     updated_at = models.DateTimeField(
@@ -51,10 +52,11 @@ class Booking(models.Model):
         null=True,
         blank=True,
         db_index=True,
+        auto_now=True,
     )
 
     class Meta:
         ordering = ["-created_at"]
 
     def __str__(self):
-        return self.spot_start
+        return self.calendly_uuid if self.calendly_uuid else str(self.spot_start)
