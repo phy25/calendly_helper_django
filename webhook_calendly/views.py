@@ -50,6 +50,7 @@ def webhook_post(request: HttpRequest):
                 'booked_at':payload['invitee']['created_at'],
                 'is_cancelled':is_cancelled,
                 'calendly_data':payload,
+                'calendly_event_type_id':payload['event_type']['uuid']
             }
             obj = Booking(**values)
             obj.save()

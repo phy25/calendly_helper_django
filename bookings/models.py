@@ -36,6 +36,7 @@ class Booking(models.Model):
     is_cancelled = models.BooleanField(default=False)
     calendly_data = JSONField()
     calendly_uuid = models.CharField(max_length=32, default='', unique=True)
+    calendly_event_type_id = models.CharField(max_length=32, default='', db_index=True)
 
     created_at = models.DateTimeField(
         verbose_name=translate('Created at'),

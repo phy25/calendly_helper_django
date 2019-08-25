@@ -51,6 +51,12 @@ class InviteeAdmin(ImportExportModelAdmin):
     group_name.admin_order_field = 'group__name'
 
 
+class BookingAdmin(admin.ModelAdmin):
+    readonly_fields=('created_at', 'updated_at', )
+    list_display = ('email', 'calendly_event_type_id', 'spot_start', 'booked_at', 'is_cancelled', 'is_approved')
+    list_filter = ('is_approved', 'is_cancelled', 'booked_at', 'spot_start', 'calendly_event_type_id')
+
+
 admin.site.register(Group, GroupAdmin)
 admin.site.register(Invitee, InviteeAdmin)
-admin.site.register(Booking)
+admin.site.register(Booking, BookingAdmin)
