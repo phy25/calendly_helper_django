@@ -3,7 +3,6 @@ from django.utils.translation import ugettext_lazy as _
 from django.http import HttpResponseRedirect
 from django.urls import reverse
 from django.apps import apps
-from .views import ListHooksView
 from .models import ApprovalGroup, Invitee
 
 from import_export import fields, resources
