@@ -1,0 +1,54 @@
+{% extends "admin/base_site.html" %}
+{% load i18n static %}
+
+{% block extrastyle %}
+  {{ block.super }}
+  <link rel="stylesheet" type="text/css" href="{% static 'admin/css/changelists.css' %}">
+  {{ media.css }}
+  {% if not actions_on_top and not actions_on_bottom %}
+    <style>
+      #changelist table thead th:first-child {width: inherit}
+    </style>
+  {% endif %}
+{% endblock %}
+
+{% block coltype %}colM{% endblock %}
+
+{% block breadcrumbs %}
+<div class="breadcrumbs">
+<a href="{% url 'admin:index' %}">{% trans 'Home' %}</a>
+&rsaquo; <a href="{% url 'admin:index' %}">Calendly Hooks</a>
+</div>
+{% endblock %}
+
+{% block content %}
+<div id="content-main">
+    <h1>Calendly Hooks Management</h1>
+    <ul class="object-tools">
+        <li>
+            <form action="{% url 'add_hook' %}" method="post">
+                {% csrf_token %}
+                <button class="addlink" type="submit">Add Hook</button>
+            </form>
+        </li>
+    </ul>
+    {% if hooks_list %}
+        <ul>
+        {% for h in hooks_list %}
+            <li>
+                <form action="{% url 'remove_hook' h.id %}" method="post">
+                    {% csrf_token %}
+                    {{ h.attributes.url }} ({{ h.attributes.state }})
+                    <button type="submit">Delete</button>
+                </form>
+            </li>
+        {% endfor %}
+        </ul>
+    {% else %}
+        <p>Cannot find any hooks on Calendly.</p>
+    {% endif %}
+</div>
+{% endblock %}
+
+{% block sidebar %}
+{% endblock %}

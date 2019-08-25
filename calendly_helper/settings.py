@@ -126,6 +126,10 @@ USE_TZ = True
 
 STATIC_URL = '/static/'
 
+# Login Service
+
+LOGIN_URL = '/admin/login/'
+
 # Constance Config Options
 CONSTANCE_BACKEND = 'constance.backends.database.DatabaseBackend'
 
@@ -134,7 +138,8 @@ CONSTANCE_CONFIG = {
       <p class="mb-0" style="line-height:1.2"><small class="text-muted">"<strong>DOUBLE BOOKING</strong>" means that the group has later bookings that will be released - usually time here will not change.</small></p>''', 'HTML announcement on student report', str),
     'SITE_TITLE': ('Calendly Tools', 'Site Title', str),
     'CUSTOM_NAVLINK': ('<a class="btn btn-outline-primary btn-sm ml-3" href="">Sign up</a>', 'Custom Navbar Link HTML', str),
-    'WEBHOOK_TOKEN': (hashlib.md5(SECRET_KEY.encode()).hexdigest()[0:16], 'Secret Token', str)
+    'WEBHOOK_TOKEN': (hashlib.md5(SECRET_KEY.encode()).hexdigest()[0:16], 'Secret Token checked on our end', str),
+    'CALENDLY_WEBHOOK_TOKEN': ('', 'Calendly Access Token', str)
 }
 
 
