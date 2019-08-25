@@ -1,42 +1,58 @@
 from django.db import models
-from django.contrib.postgres.fields import JSONField
 from django.utils import timezone
 from django.utils.translation import ugettext as translate
 
-# Create your models here.
 
-class Group(models.Model):
-    name = models.CharField(max_length=128, unique=True)
+class BookingSoftDeletionManager(models.Manager):
+    def __init__(self, *args, **kwargs):
+        self.active_only = kwargs.pop('active_only', True)
+        super(BookingSoftDeletionManager, self).__init__(*args, **kwargs)
 
-    class Meta:
-        ordering = ["name"]
+    def get_queryset(self):
+        if self.active_only:
+            return BookingSoftDeletionQuerySet(self.model).filter(cancelled_at=None)
+        return BookingSoftDeletionQuerySet(self.model)
 
-    def __str__(self):
-        return self.name
+    def hard_delete(self):
+        return self.get_queryset().hard_delete()
 
 
-class Invitee(models.Model):
-    email = models.EmailField()
-    group = models.ForeignKey(Group, on_delete=models.SET_NULL, null=True, blank=True)
+class BookingSoftDeletionQuerySet(models.QuerySet):
+    def delete(self):
+        return super(BookingSoftDeletionQuerySet, self).update(cancelled_at=timezone.now())
 
-    class Meta:
-        ordering = ["email"]
+    def hard_delete(self):
+        return super(BookingSoftDeletionQuerySet, self).delete()
 
-    def __str__(self):
-        return self.email
+    def active(self):
+        return self.filter(cancelled_at=None)
+
+    def cancelled(self):
+        return self.exclude(cancelled_at=None)
 
 
 class Booking(models.Model):
+    objects = BookingSoftDeletionManager()
+    all_objects = BookingSoftDeletionManager(active_only=False)
+
+    event_type_id = models.CharField(max_length=32, default='', db_index=True)
     email = models.EmailField(null=False, blank=True)
     spot_start = models.DateTimeField()
     spot_end = models.DateTimeField()
     booked_at = models.DateTimeField(default=timezone.now)
-    is_approved = models.BooleanField(default=False)
-    approved_for_group = models.ForeignKey(Group, on_delete=models.PROTECT, null=True, blank=True, db_index=True)
-    is_cancelled = models.BooleanField(default=False)
-    calendly_data = JSONField()
-    calendly_uuid = models.CharField(max_length=32, default='', unique=True)
-    calendly_event_type_id = models.CharField(max_length=32, default='', db_index=True)
+
+    APPROVAL_STATUS_NEW = 'NEW'
+    APPROVAL_STATUS_APPROVED = 'APPROVED'
+    APPROVAL_STATUS_DECLINED = 'DECLINED'
+    APPROVAL_STATUS_CHOICES = (
+        (APPROVAL_STATUS_NEW, 'New'),
+        (APPROVAL_STATUS_APPROVED, 'Approved'),
+        (APPROVAL_STATUS_DECLINED, 'Declined'),
+    )
+    approval_status = models.CharField(default=APPROVAL_STATUS_NEW, max_length=16,
+        choices=APPROVAL_STATUS_CHOICES,)
+
+    cancelled_at = models.DateTimeField(blank=True, null=True)
 
     created_at = models.DateTimeField(
         verbose_name=translate('Created at'),
@@ -59,5 +75,12 @@ class Booking(models.Model):
     class Meta:
         ordering = ["-created_at"]
 
+    def delete(self):
+        self.cancelled_at = timezone.now()
+        self.save()
+
+    def hard_delete(self):
+        super(Booking, self).delete()
+
     def __str__(self):
-        return self.calendly_uuid if self.calendly_uuid else str(self.spot_start)
+        return 'Booking #'+str(self.id)
