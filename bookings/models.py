@@ -35,6 +35,7 @@ class Booking(models.Model):
     approved_for_group = models.ForeignKey(Group, on_delete=models.PROTECT, null=True, blank=True)
     is_cancelled = models.BooleanField(default=False)
     calendly_data = JSONField()
+    calendly_uuid = models.CharField(max_length=32, default='', unique=True)
 
     created_at = models.DateTimeField(
         verbose_name=translate('Created at'),
