@@ -129,7 +129,7 @@ def add_hook(request: HttpRequest):
         headers={'X-TOKEN':config.CALENDLY_WEBHOOK_TOKEN}, method='POST')
     try:
         f = urllib.request.urlopen(req)
-        if f.status == 200:
+        if f.status == 201:
             return HttpResponseRedirect(reverse('list_hooks'))
         else:
             return HttpResponse(f.read().decode(), status=f.status, content_type='application/json')
