@@ -19,6 +19,7 @@ from django.urls import include, path
 from constance import config
 
 urlpatterns = [
+    path('', include('webhook_calendly.frontend_urls')),
     path('', include('bookings.urls')),
     path('calendly/', include('webhook_calendly.urls')),
     path('admin/', admin.site.urls),
