@@ -3,11 +3,13 @@ from django.utils.translation import ugettext_lazy as _
 from django.http import HttpResponseRedirect
 from django.urls import reverse
 from django.apps import apps
-from .models import ApprovalGroup, Invitee
+from .models import ApprovalGroup, Invitee, BookingCalendlyData
+from bookings.models import Booking, CancelledBooking
 
 from import_export import fields, resources
 from import_export.widgets import ForeignKeyWidget
 from import_export.admin import ImportExportModelAdmin
+from bookings.admin import BookingAdmin, CancelledBookingAdmin
 
 
 class GroupCreationWidget(ForeignKeyWidget):
@@ -97,6 +99,26 @@ class Hook(object):
             return '%s.%s' % (self.app_label, self.model_name)
 
     _meta = Meta()
+
+
+class BookingCalendlyInline(admin.StackedInline):
+    model = BookingCalendlyData
+    # extra = 0
+    show_change_link = True
+
+
+class BookingCalendlyAdmin(BookingAdmin):
+    inlines = [BookingCalendlyInline]
+
+
+class CancelledBookingCalendlyAdmin(CancelledBookingAdmin):
+    inlines = [BookingCalendlyInline]
+
+
+admin.site.unregister(Booking)
+admin.site.register(Booking, BookingCalendlyAdmin)
+admin.site.unregister(CancelledBooking)
+admin.site.register(CancelledBooking, CancelledBookingCalendlyAdmin)
 
 admin.site.register((Hook,), HookAdmin)
 admin.site.register(ApprovalGroup, GroupAdmin)

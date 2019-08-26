@@ -6,11 +6,14 @@ from django.utils.translation import ugettext as translate
 class BookingSoftDeletionManager(models.Manager):
     def __init__(self, *args, **kwargs):
         self.active_only = kwargs.pop('active_only', True)
+        self.cancelled_only = kwargs.pop('cancelled_only', False)
         super(BookingSoftDeletionManager, self).__init__(*args, **kwargs)
 
     def get_queryset(self):
         if self.active_only:
             return BookingSoftDeletionQuerySet(self.model).filter(cancelled_at=None)
+        if self.cancelled_only:
+            return BookingSoftDeletionQuerySet(self.model).exclude(cancelled_at=None)
         return BookingSoftDeletionQuerySet(self.model)
 
     def hard_delete(self):
@@ -84,3 +87,14 @@ class Booking(models.Model):
 
     def __str__(self):
         return 'Booking #'+str(self.id)
+
+class CancelledBooking(Booking):
+    objects = BookingSoftDeletionManager(active_only=False, cancelled_only=True)
+
+    class Meta:
+        proxy = True
+        verbose_name = 'Cancelled Booking'
+        verbose_name_plural = 'Cancelled Bookings'
+
+    def delete(self):
+        super(CancelledBooking, self).hard_delete()
