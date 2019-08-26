@@ -13,7 +13,7 @@ class BookingSoftDeletionManager(models.Manager):
         if self.active_only:
             return BookingSoftDeletionQuerySet(self.model).filter(cancelled_at=None)
         if self.cancelled_only:
-            return BookingSoftDeletionQuerySet(self.model).exclude(cancelled_at=None)
+            return models.QuerySet(self.model).exclude(cancelled_at=None)
         return BookingSoftDeletionQuerySet(self.model)
 
     def hard_delete(self):
