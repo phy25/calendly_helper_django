@@ -64,5 +64,7 @@ def webhook_post(request: HttpRequest):
     finally:
         if is_cancelled:
             obj.booking.delete() # cancel
+        # run approval
+        obj.run_approval()
 
     return HttpResponse('OK')
