@@ -34,12 +34,18 @@ def superuser_required(view_func=None, redirect_field_name=REDIRECT_FIELD_NAME,
     return actual_decorator
 
 
+def get_hook_url(request):
+    return request.build_absolute_uri(reverse('webhook_post')+'?token='+config.WEBHOOK_TOKEN)
+
+
 @method_decorator(superuser_required, name='dispatch')
 class ListHooksView(generic.ListView):
     template_name = 'webhook_calendly/list.html'
     context_object_name = 'hooks_list'
+    cached_request = None
 
     def dispatch(self, request, *args, **kwargs):
+        self.cached_request = request
         if not config.CALENDLY_WEBHOOK_TOKEN:
             return HttpResponseBadRequest('Please set up token first!')
         return super(generic.ListView, self).dispatch(request, *args, **kwargs)
@@ -61,6 +67,10 @@ class ListHooksView(generic.ListView):
         context['title'] = 'Calendly Hooks'
         context['site_title'] = admin.site.site_title
         context['site_header'] = admin.site.site_header
+        context['has_hook'] = (
+            get_hook_url(self.cached_request) in
+            [i['attributes']['url'] for i in context[self.context_object_name]]
+        )
         return context
 
 
@@ -83,7 +93,7 @@ def remove_hook(request: HttpRequest, id: int):
 def add_hook(request: HttpRequest):
     if not config.CALENDLY_WEBHOOK_TOKEN:
         return HttpResponseBadRequest('Please set up token first!')
-    post_data = "events[]=invitee.created&events[]=invitee.canceled&"+urlencode({'url': request.build_absolute_uri(reverse('webhook_post')+'?token='+config.WEBHOOK_TOKEN)})
+    post_data = "events[]=invitee.created&events[]=invitee.canceled&"+urlencode({'url': get_hook_url(request)})
     req = urllib.request.Request(url='https://calendly.com/api/v1/hooks/',
         data=post_data.encode(),
         headers={'X-TOKEN':config.CALENDLY_WEBHOOK_TOKEN}, method='POST')

@@ -24,12 +24,14 @@
 {% block content %}
 <div id="content-main">
     <ul class="object-tools">
+        {% if not has_hook %}
         <li>
             <form action="{% url 'add_hook' %}" method="post">
                 {% csrf_token %}
                 <button class="addlink" type="submit">Add Hook</button>
             </form>
         </li>
+        {% endif %}
     </ul>
     {% if hooks_list %}
         <p>Hooks on your Calendly account:</p>
