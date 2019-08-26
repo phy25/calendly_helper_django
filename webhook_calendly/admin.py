@@ -3,6 +3,8 @@ from django.utils.translation import ugettext_lazy as _
 from django.http import HttpResponseRedirect
 from django.urls import reverse
 from django.apps import apps
+from django.db.models import Count, Subquery, OuterRef
+from django.db.models.fields import IntegerField
 from .models import ApprovalGroup, Invitee, BookingCalendlyData
 from bookings.models import Booking, CancelledBooking
 
@@ -42,17 +44,46 @@ class GroupAdmin(admin.ModelAdmin):
     fieldsets = [
         (None, {'fields': ['name']}),
     ]
+    list_display = ('name', 'invitees_count', 'bookings_total')
     inlines = [InviteeInline]
+
+    def invitees_count(self, inst):
+        return inst._invitees_count
+    invitees_count.short_description = 'Invitees Count'
+    invitees_count.admin_order_field = '_invitees_count'
+
+    def bookings_total(self, inst):
+        return inst._bookings_total
+    bookings_total.short_description = 'Bookings Total'
+    bookings_total.admin_order_field = '_bookings_total'
+
+    def get_queryset(self, request):
+        qs = super(GroupAdmin, self).get_queryset(request)
+        return qs.annotate(
+            _invitees_count=Count('invitee'),
+            _bookings_total=Count('bookingcalendlydata__booking')
+        )
 
 
 class InviteeAdmin(ImportExportModelAdmin):
     resource_class = InviteeIEResource
-    list_display = ('email', 'group_name')
+    list_display = ('email', 'group', 'bookings_total')
+    list_select_related = ('group',)
 
-    def group_name(self, obj):
-        return obj.group.name
+    def bookings_total(self, obj):
+        return obj._bookings_total
+    bookings_total.admin_order_field = '_bookings_total'
 
-    group_name.admin_order_field = 'group__name'
+    def get_queryset(self, request):
+        qs = super(InviteeAdmin, self).get_queryset(request)
+        booking_qs = Booking.objects.filter(
+                email=OuterRef('email')
+            ).annotate(
+                count=Count('email')
+            ).values('count')
+        return qs.annotate(
+            _bookings_total=Subquery(booking_qs, output_field=IntegerField())
+        )
 
 class HookAdmin(admin.ModelAdmin):
     def has_add_permission(self, request):

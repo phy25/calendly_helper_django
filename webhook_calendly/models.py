@@ -12,6 +12,9 @@ class ApprovalGroup(models.Model):
     def __str__(self):
         return self.name
 
+    def run_approval(self):
+        pass
+
 
 class Invitee(models.Model):
     email = models.EmailField()

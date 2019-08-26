@@ -142,7 +142,6 @@ CONSTANCE_CONFIG = {
     'CALENDLY_WEBHOOK_TOKEN': ('', 'Calendly Access Token', str)
 }
 
-
 # import-export
 IMPORT_EXPORT_IMPORT_PERMISSION_CODE = 'add'
 
