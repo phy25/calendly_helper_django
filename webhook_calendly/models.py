@@ -97,3 +97,10 @@ class BookingCalendlyData(models.Model):
             # Assume no group, decline
             self.booking.approval_status = Booking.APPROVAL_STATUS_DECLINED
             self.booking.save()
+            LogEntry.objects.log_action(
+                            user_id=config.APPROVAL_USER_ID,
+                            content_type_id=ContentType.objects.get_for_model(self).pk,
+                            object_id=self.pk,
+                            object_repr=str(self),
+                            change_message="Declined (no group)",
+                            action_flag=CHANGE)
