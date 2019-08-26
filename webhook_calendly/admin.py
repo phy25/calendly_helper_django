@@ -13,6 +13,8 @@ from import_export.widgets import ForeignKeyWidget
 from import_export.admin import ImportExportModelAdmin
 from bookings.admin import BookingAdmin, CancelledBookingAdmin
 
+from .admin_decorators import admin_link
+
 
 class GroupCreationWidget(ForeignKeyWidget):
     def clean(self, value, row=None, *args, **kwargs):
@@ -67,8 +69,12 @@ class GroupAdmin(admin.ModelAdmin):
 
 class InviteeAdmin(ImportExportModelAdmin):
     resource_class = InviteeIEResource
-    list_display = ('email', 'group', 'bookings_total')
+    list_display = ('email', 'group_link', 'bookings_total')
     list_select_related = ('group',)
+
+    @admin_link('group', _('Group'))
+    def group_link(self, group):
+        return group
 
     def bookings_total(self, obj):
         return obj._bookings_total
@@ -84,6 +90,7 @@ class InviteeAdmin(ImportExportModelAdmin):
         return qs.annotate(
             _bookings_total=Subquery(booking_qs, output_field=IntegerField())
         )
+
 
 class HookAdmin(admin.ModelAdmin):
     def has_add_permission(self, request):
