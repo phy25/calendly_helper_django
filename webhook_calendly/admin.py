@@ -55,15 +55,16 @@ class GroupAdmin(admin.ModelAdmin):
     invitees_count.admin_order_field = '_invitees_count'
 
     def bookings_total(self, inst):
+        #return None
         return inst._bookings_total
-    bookings_total.short_description = 'Bookings Total'
-    bookings_total.admin_order_field = '_bookings_total'
+    #bookings_total.short_description = 'Bookings Total'
+    #bookings_total.admin_order_field = '_bookings_total'
 
     def get_queryset(self, request):
         qs = super(GroupAdmin, self).get_queryset(request)
         return qs.annotate(
-            _invitees_count=Count('invitee'),
-            _bookings_total=Count('bookingcalendlydata')
+            _invitees_count=Count('invitee', distinct=True),
+            _bookings_total=Count('bookingcalendlydata', distinct=True)
         )
 
 
