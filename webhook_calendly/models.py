@@ -40,31 +40,32 @@ class ApprovalGroup(models.Model):
         # 4 - insert logs
         with transaction.atomic():
             for b in approved:
-                b.approval_status = Booking.APPROVAL_STATUS_APPROVED
                 b.calendly_data.approval_group = self
                 b.calendly_data.save()
-                b.save()
-                LogEntry.objects.log_action(
-                            user_id=config.APPROVAL_USER_ID,
-                            content_type_id=content_type_id,
-                            object_id=b.pk,
-                            object_repr=str(b),
-                            change_message="Approved",
-                            action_flag=CHANGE)
+                if b.approval_status != Booking.APPROVAL_STATUS_APPROVED:
+                    b.approval_status = Booking.APPROVAL_STATUS_APPROVED
+                    b.save()
+                    LogEntry.objects.log_action(
+                                user_id=config.APPROVAL_USER_ID,
+                                content_type_id=content_type_id,
+                                object_id=b.pk,
+                                object_repr=str(b),
+                                change_message="Approved",
+                                action_flag=CHANGE)
 
             for b in declined:
-                b.approval_status = Booking.APPROVAL_STATUS_DECLINED
                 b.calendly_data.approval_group = self
                 b.calendly_data.save()
-                b.save()
-
-                LogEntry.objects.log_action(
-                            user_id=config.APPROVAL_USER_ID,
-                            content_type_id=content_type_id,
-                            object_id=b.pk,
-                            object_repr=str(b),
-                            change_message="Declined",
-                            action_flag=CHANGE)
+                if b.approval_status != Booking.APPROVAL_STATUS_DECLINED:
+                    b.approval_status = Booking.APPROVAL_STATUS_DECLINED
+                    b.save()
+                    LogEntry.objects.log_action(
+                                user_id=config.APPROVAL_USER_ID,
+                                content_type_id=content_type_id,
+                                object_id=b.pk,
+                                object_repr=str(b),
+                                change_message="Declined",
+                                action_flag=CHANGE)
 
 
 class Invitee(models.Model):
@@ -99,12 +100,13 @@ class BookingCalendlyData(models.Model):
                 invitee.group.execute_approval_qs(approved_qs, declined_qs)
         except ObjectDoesNotExist:
             # Assume no group, decline
-            self.booking.approval_status = Booking.APPROVAL_STATUS_DECLINED
-            self.booking.save()
-            LogEntry.objects.log_action(
-                            user_id=config.APPROVAL_USER_ID,
-                            content_type_id=ContentType.objects.get_for_model(self).pk,
-                            object_id=self.pk,
-                            object_repr=str(self),
-                            change_message="Declined (no group)",
-                            action_flag=CHANGE)
+            if self.booking.approval_status != Booking.APPROVAL_STATUS_DECLINED:
+                self.booking.approval_status = Booking.APPROVAL_STATUS_DECLINED
+                self.booking.save()
+                LogEntry.objects.log_action(
+                                user_id=config.APPROVAL_USER_ID,
+                                content_type_id=ContentType.objects.get_for_model(self.booking).pk,
+                                object_id=self.booking.pk,
+                                object_repr=str(self.booking),
+                                change_message="Declined (no group)",
+                                action_flag=CHANGE)
