@@ -84,11 +84,11 @@ class InviteeAdmin(ImportExportModelAdmin):
         qs = super(InviteeAdmin, self).get_queryset(request)
         booking_qs = Booking.objects.filter(
                 email=OuterRef('email')
-            ).annotate(
-                count=Count('email')
-            ).values('count')
+            ).values('email').order_by('email').annotate(
+                total=Count('email')
+            ).values('total')
         return qs.annotate(
-            _bookings_total=Subquery(booking_qs, output_field=IntegerField())
+            _bookings_total=Subquery(booking_qs[:1], output_field=IntegerField())
         )
 
 
