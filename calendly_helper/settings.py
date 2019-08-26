@@ -139,7 +139,8 @@ CONSTANCE_CONFIG = {
     'SITE_TITLE': ('Calendly Tools', 'Site Title', str),
     'CUSTOM_NAVLINK': ('<a class="btn btn-outline-primary btn-sm ml-3" href="">Sign up</a>', 'Custom Navbar Link HTML', str),
     'WEBHOOK_TOKEN': (hashlib.md5(SECRET_KEY.encode()).hexdigest()[0:16], 'Secret Token checked on our end', str),
-    'CALENDLY_WEBHOOK_TOKEN': ('', 'Calendly Access Token', str)
+    'CALENDLY_WEBHOOK_TOKEN': ('', 'Calendly Access Token', str),
+    'APPROVAL_USER_ID': (1, 'Approval System User ID (for logging purpose)', int),
 }
 
 # import-export

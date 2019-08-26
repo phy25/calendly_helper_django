@@ -2,6 +2,9 @@ from django.db import models, transaction
 from bookings.models import Booking
 from django.contrib.postgres.fields import JSONField
 from django.core.exceptions import ObjectDoesNotExist
+from django.contrib.admin.models import LogEntry, CHANGE
+from django.contrib.contenttypes.models import ContentType
+from constance import config
 
 
 class ApprovalGroup(models.Model):
@@ -19,21 +22,45 @@ class ApprovalGroup(models.Model):
         """
         # 1 - get related bookings by email
         invitees_email = [i.email for i in self.invitee_set.only('email').all()]
-        bookings = Booking.objects.filter(
+        bookings = list(Booking.objects.filter(
             event_type_id=event_type_id,
             email__in=invitees_email
-            ).order_by('booked_at')
+            ).order_by('booked_at'))
+            # force getting all
 
         # 2 - decide
         bookings_approved = bookings[0:1] # keep first booked
         bookings_declined = bookings[1:]
         return bookings_approved, bookings_declined
 
-    def execute_approval_qs(self, approved_qs, declined_qs):
+    def execute_approval_qs(self, approved, declined):
+        content_type_id = ContentType.objects.get_for_model(Booking).pk
+
         # 3 - submit change
+        # 4 - insert logs
         with transaction.atomic():
-            approved_qs.update(approval_status=Booking.APPROVAL_STATUS_APPROVED)
-            declined_qs.update(approval_status=Booking.APPROVAL_STATUS_DECLINED)
+            for b in approved:
+                b.approval_status = Booking.APPROVAL_STATUS_APPROVED
+                b.save()
+                LogEntry.objects.log_action(
+                            user_id=config.APPROVAL_USER_ID,
+                            content_type_id=content_type_id,
+                            object_id=b.pk,
+                            object_repr=str(b),
+                            change_message="Approved",
+                            action_flag=CHANGE)
+
+            for b in declined:
+                b.approval_status = Booking.APPROVAL_STATUS_DECLINED
+                b.save()
+
+                LogEntry.objects.log_action(
+                            user_id=config.APPROVAL_USER_ID,
+                            content_type_id=content_type_id,
+                            object_id=b.pk,
+                            object_repr=str(b),
+                            change_message="Declined",
+                            action_flag=CHANGE)
 
 
 class Invitee(models.Model):
