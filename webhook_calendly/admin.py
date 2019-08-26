@@ -63,7 +63,7 @@ class GroupAdmin(admin.ModelAdmin):
         qs = super(GroupAdmin, self).get_queryset(request)
         return qs.annotate(
             _invitees_count=Count('invitee'),
-            _bookings_total=Count('bookingcalendlydata__booking')
+            _bookings_total=Count('bookingcalendlydata')
         )
 
 

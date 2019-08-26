@@ -41,6 +41,8 @@ class ApprovalGroup(models.Model):
         with transaction.atomic():
             for b in approved:
                 b.approval_status = Booking.APPROVAL_STATUS_APPROVED
+                b.calendly_data.approval_group = self
+                b.calendly_data.save()
                 b.save()
                 LogEntry.objects.log_action(
                             user_id=config.APPROVAL_USER_ID,
@@ -52,6 +54,8 @@ class ApprovalGroup(models.Model):
 
             for b in declined:
                 b.approval_status = Booking.APPROVAL_STATUS_DECLINED
+                b.calendly_data.approval_group = self
+                b.calendly_data.save()
                 b.save()
 
                 LogEntry.objects.log_action(
