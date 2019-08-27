@@ -1,0 +1,28 @@
+{% load i18n %} _{% for x in config.SITE_TITLE %}_{% endfor %}_
+< {{ config.SITE_TITLE }} >
+ -{% for x in config.SITE_TITLE %}-{% endfor %}-
+        \   ^__^
+         \  (oo)\_______
+            (__)\       )\/\
+                ||----w |
+                ||     ||
+
+{{ announcement|safe }}
+{% if declined_bookings_count %}
+========================================
+{% filter upper|center:"40" %}{% blocktrans count counter=declined_bookings_count %}{{ declined_bookings_count }} invalid booking pending removal{% plural %}{{ declined_bookings_count }} invalid bookings pending removal{% endblocktrans %}{% endfilter %}
+{{ "Please don't do this again!"|center:"40" }}
+========================================
+{% endif %}
+Groups List
+-----------
+{{ "Group"|upper|center:"10" }}	{{ "Confirmed Spot"|upper|center:"30" }}
+{% for g in groups_list %}{{ g.name|ljust:"10" }}	{% if g.first_booking %}{{ g.first_booking.booking.spot_start }}{% if g.declined_bookings_count %} **DUP BOOKING!**{% endif %}{% else %}None{% endif %}
+{% endfor %}
+Bookings List
+-------------
+{{ "Date"|upper|center:"12" }}	{{ "Time"|upper|center:"22" }}	{{ "Group"|upper|center:"10" }}
+{# we assume that it's in the same day #}{% for b in bookings_list %}{{ b.booking.spot_start|date:"D, M j"|ljust:"12" }}	{% filter ljust:"22" %}{{ b.booking.spot_start|date:"P" }}-{{ b.booking.spot_end|date:"P" }}{% endfilter %}	{{ b.approval_group.name }}
+{% endfor %}
+_________________________________________
+Built with Calendly, Django, and efforts.

@@ -9,23 +9,19 @@
   <details class="card mb-3">
     <summary class="card-header">{% trans "Questions?" context "Announcement Title" %}</summary>
     <div class="card-body">
-      {{ config.ANNOUNCEMENT|safe }}
+      {{ announcement|safe }}
     </div>
   </details>
 
-{% if invalid_bookings_count %}
+{% if declined_bookings_count %}
   <div class="card border-danger" style="max-width: 30rem;">
     <div class="card-body">
-      <h5 class="card-title">{% blocktrans count counter=invalid_bookings_count %}{{ invalid_bookings_count }} invalid booking pending removal{% plural %}{{ invalid_bookings_count }} invalid bookings pending removal{% endblocktrans %}</h5>
+      <h5 class="card-title">{% blocktrans count counter=declined_bookings_count %}{{ declined_bookings_count }} invalid booking pending removal{% plural %}{{ declined_bookings_count }} invalid bookings pending removal{% endblocktrans %}</h5>
       <p class="card-text">Please don't do this again!</p>
     </div>
   </div>
 {% endif %}
   <h4 id="groups" class="mt-4">Groups List</h5>
-<?php
-$sprintf_format = '        <tr class="%1$s"><th scope="row">%2$s</th><td>%4$s</td></tr>'."\n";
-//echo sprintf($sprintf_format, "GROUP", "MEMBER", "CONFIRMED SPOT");
-?>
   <div class="table-responsive">
     <table class="table table-sm table-striped table-hover text-nowrap">
       <thead>
@@ -36,69 +32,15 @@ $sprintf_format = '        <tr class="%1$s"><th scope="row">%2$s</th><td>%4$s</t
         </tr>
       </thead>
       <tbody>
-<?php
-$handle = fopen(ALLOWED_USER_FILE, "r");
-if ($handle) {
-    while (($line = fgets($handle)) !== false) {
-        if(substr($line, 0, 5) !== "<?php"){
-            // actual content
-            $linecsv = explode(",", $line);
-            $group_name = trim($linecsv[0]);
-            $member = '';
-            $row_status = '';
-            /*
-            foreach($linecsv as $i=>$u){
-                if($i == 0) continue;
-                $member .= ', '.clean_email(trim($u));
-            }
-            $member = substr($member, 2);
-            */
-
-            if(isset($groups[$group_name]) && !empty($groups[$group_name]['first_id'])){
-                // has bookings
-                if(is_array($groups[$group_name]['conflict_ids']) && count($groups[$group_name]['conflict_ids'])){
-                    // has double bookings
-                    // $status = $groups[$group_name]['first_spot'].' ('.clean_email($groups[$group_name]['first_by']).')'.' **DOUBLE BOOKING!**';
-                    $status = $groups[$group_name]['first_spot'].' <strong class="text-danger">DOUBLE BOOKING!</strong>';
-                    // $row_status = 'table-warning';
-                }else{
-                    // has only one booking
-                    $status = $groups[$group_name]['first_spot'];
-                }
-
-                // add to $spot_list
-                $sort_key = strtotime($groups[$group_name]['first_spot']).$group_name;// prevent conflict
-                $first_booking = $booking[$groups[$group_name]['first_id']];
-                $spot_list[$sort_key] = array(
-                    'invitee_start_time'=>$first_booking['event']['invitee_start_time'],
-                    'invitee_end_time'=>$first_booking['event']['invitee_end_time'],
-                    'group_name'=>$group_name,
-                    'booked_at'=>$groups[$group_name]['first_at'],
-                    'booked_by'=>$groups[$group_name]['first_by'],
-                    'booked_claimed_name'=>$first_booking['invitee']['name']
-                );
-            }else{
-                // no bookings
-                $status = "None";
-                $row_status = 'table-warning';
-            }
-            echo sprintf($sprintf_format, $row_status, $group_name, $member, $status);
-        }
-    }
-
-    fclose($handle);
-} else {
-    // error opening the file.
-}
-?>
+{% for g in groups_list %}
+        <tr class="{{ g.row_class }}">
+          <th scope="row">{{ g.name }}</th>
+          <td>{% if g.first_booking %}{{ g.first_booking.booking.spot_start }}{% if g.declined_bookings_count %} <strong class="text-danger">DUP BOOKING!</strong>{% endif %}{% else %}None{% endif %}</td>
+        </tr>{% endfor %}
       </tbody>
     </table>
   </div>
   <h4 id="bookings" class="mt-4">Bookings List</h5>
-<?php
-$sprintf_format = '        <tr><td>%s</td><td>%s</td><td>%s</td></tr>'."\n";
-// echo sprintf($sprintf_format, "START", "END", "GROUP");
-?>
   <div class="table-responsive">
     <table class="table table-sm table-striped text-nowrap table-hover">
       <thead>
@@ -108,15 +50,9 @@ $sprintf_format = '        <tr><td>%s</td><td>%s</td><td>%s</td></tr>'."\n";
           <th scope="col">Group</th>
         </tr>
       </thead>
-      <tbody>
-<?php
-ksort($spot_list, SORT_NATURAL);
-
-foreach($spot_list as $key=>$b){
-  // we assume that it's in the same day
-    echo sprintf($sprintf_format, date("D, M j", strtotime($b['invitee_start_time'])), date("g:ia", strtotime($b['invitee_start_time'])).'-'.date("g:ia", strtotime($b['invitee_end_time'])), $b['group_name']);
-}
-?>
+      <tbody>{# we assume that it's in the same day #}
+{% for b in bookings_list %}
+        <tr><td>{{ b.booking.spot_start|date:"D, M j" }}</td><td>{{ b.booking.spot_start|date:"P" }}-{{ b.booking.spot_end|date:"P" }}</td><td>{{ b.approval_group.name }}</td></td></tr>{% endfor %}
       </tbody>
     </table>
   </div>

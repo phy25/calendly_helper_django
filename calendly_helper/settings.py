@@ -135,7 +135,7 @@ CONSTANCE_BACKEND = 'constance.backends.database.DatabaseBackend'
 
 CONSTANCE_CONFIG = {
     'ANNOUNCEMENT': ('''<p class="mb-1">It may take some seconds to reflect your latest booking, while invalid bookings won\'t show up here.</p>
-      <p class="mb-0" style="line-height:1.2"><small class="text-muted">"<strong>DOUBLE BOOKING</strong>" means that the group has later bookings that will be released - usually time here will not change.</small></p>''', 'HTML announcement on student report', str),
+      <p class="mb-0" style="line-height:1.2"><small class="text-muted">"<strong>DUP BOOKING</strong>" means that the group has later bookings that will be released - usually time here will not change.</small></p>''', 'HTML announcement on student report', str),
     'SITE_TITLE': ('Calendly Tools', 'Site Title', str),
     'CUSTOM_NAVLINK': ('<a class="btn btn-outline-primary btn-sm ml-3" href="">Sign up</a>', 'Custom Navbar Link HTML', str),
     'WEBHOOK_TOKEN': (hashlib.md5(SECRET_KEY.encode()).hexdigest()[0:16], 'Secret Token checked on our end', str),
