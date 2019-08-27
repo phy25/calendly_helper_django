@@ -58,48 +58,62 @@ class ApprovalGroup(models.Model):
     def update_approval_groups(self, qs):
         return qs.update(approval_group=self)
 
-    def execute_approval(self, approved, declined):
+    def execute_approval(self, approved, declined, fake=False):
         content_type_id = ContentType.objects.get_for_model(Booking).pk
-        changed = 0
+        changed = []
 
         # 3 - submit change
         # 4 - insert logs
-        with transaction.atomic():
+        if fake:
             for b in approved:
-                # check if it's protected or not
                 if b.approval_protected:
                     continue
-                b.calendly_data.approval_group = self
-                b.calendly_data.save()
                 if b.approval_status != Booking.APPROVAL_STATUS_APPROVED:
                     b.approval_status = Booking.APPROVAL_STATUS_APPROVED
-                    b.save()
-                    LogEntry.objects.log_action(
-                                user_id=config.APPROVAL_USER_ID,
-                                content_type_id=content_type_id,
-                                object_id=b.pk,
-                                object_repr=str(b),
-                                change_message="Approved",
-                                action_flag=CHANGE)
-                    changed = changed + 1
-
+                    changed.append(b)
             for b in declined:
-                # check if it's protected or not
                 if b.approval_protected:
                     continue
-                b.calendly_data.approval_group = self
-                b.calendly_data.save()
                 if b.approval_status != Booking.APPROVAL_STATUS_DECLINED:
                     b.approval_status = Booking.APPROVAL_STATUS_DECLINED
-                    b.save()
-                    LogEntry.objects.log_action(
-                                user_id=config.APPROVAL_USER_ID,
-                                content_type_id=content_type_id,
-                                object_id=b.pk,
-                                object_repr=str(b),
-                                change_message="Declined",
-                                action_flag=CHANGE)
-                    changed = changed + 1
+                    changed.append(b)
+        else:
+            with transaction.atomic():
+                for b in approved:
+                    # check if it's protected or not
+                    if b.approval_protected:
+                        continue
+                    b.calendly_data.approval_group = self
+                    b.calendly_data.save()
+                    if b.approval_status != Booking.APPROVAL_STATUS_APPROVED:
+                        b.approval_status = Booking.APPROVAL_STATUS_APPROVED
+                        b.save()
+                        LogEntry.objects.log_action(
+                                    user_id=config.APPROVAL_USER_ID,
+                                    content_type_id=content_type_id,
+                                    object_id=b.pk,
+                                    object_repr=str(b),
+                                    change_message="Approved",
+                                    action_flag=CHANGE)
+                        changed.append(b)
+
+                for b in declined:
+                    # check if it's protected or not
+                    if b.approval_protected:
+                        continue
+                    b.calendly_data.approval_group = self
+                    b.calendly_data.save()
+                    if b.approval_status != Booking.APPROVAL_STATUS_DECLINED:
+                        b.approval_status = Booking.APPROVAL_STATUS_DECLINED
+                        b.save()
+                        LogEntry.objects.log_action(
+                                    user_id=config.APPROVAL_USER_ID,
+                                    content_type_id=content_type_id,
+                                    object_id=b.pk,
+                                    object_repr=str(b),
+                                    change_message="Declined",
+                                    action_flag=CHANGE)
+                        changed.append(b)
 
         return changed
 
