@@ -1,6 +1,8 @@
 from django.contrib import admin
+from django.contrib import messages
+from django.contrib.contenttypes.models import ContentType
+from django.contrib.admin.models import LogEntry, CHANGE
 
-# Register your models here.
 from .models import Booking, CancelledBooking
 
 
@@ -10,9 +12,19 @@ class BookingAdmin(admin.ModelAdmin):
     list_display = ('email', 'event_type_id', 'spot_start', 'booked_at', 'approval_status', 'approval_protected')
     list_filter = ('approval_status', 'booked_at', 'spot_start', 'event_type_id')
 
+    content_type_id = ContentType.objects.get_for_model(Booking).pk
+
     def approve_and_protect(self, request, queryset):
         try:
             changed = queryset.update(approval_status=Booking.APPROVAL_STATUS_APPROVED, approval_protected=True)
+            for b in queryset:
+                LogEntry.objects.log_action(
+                                    user_id=request.user.id,
+                                    content_type_id=self.content_type_id,
+                                    object_id=b.pk,
+                                    object_repr=str(b),
+                                    change_message="Approved and protected",
+                                    action_flag=CHANGE)
             self.message_user(request, "Approved and protected "+str(changed)+" rows.")
         except Exception as e:
             self.message_user(request, str(e), messages.ERROR)
@@ -22,6 +34,14 @@ class BookingAdmin(admin.ModelAdmin):
     def decline_and_protect(self, request, queryset):
         try:
             changed = queryset.update(approval_status=Booking.APPROVAL_STATUS_DECLINED, approval_protected=True)
+            for b in queryset:
+                LogEntry.objects.log_action(
+                                    user_id=request.user.id,
+                                    content_type_id=self.content_type_id,
+                                    object_id=b.pk,
+                                    object_repr=str(b),
+                                    change_message="Declined and protected",
+                                    action_flag=CHANGE)
             self.message_user(request, "Declined and protected "+str(changed)+" rows.")
         except Exception as e:
             self.message_user(request, str(e), messages.ERROR)
@@ -31,7 +51,15 @@ class BookingAdmin(admin.ModelAdmin):
     def reset_approval(self, request, queryset):
         try:
             changed = queryset.update(approval_status=Booking.APPROVAL_STATUS_NEW, approval_protected=False)
-            self.message_user(request, "Reseted "+str(changed)+" rows.")
+            for b in queryset:
+                LogEntry.objects.log_action(
+                                    user_id=request.user.id,
+                                    content_type_id=self.content_type_id,
+                                    object_id=b.pk,
+                                    object_repr=str(b),
+                                    change_message="Reseted approval",
+                                    action_flag=CHANGE)
+            self.message_user(request, "Reseted "+str(queryset.count())+" rows.")
         except Exception as e:
             self.message_user(request, str(e), messages.ERROR)
     reset_approval.short_description = "Reset approval"
