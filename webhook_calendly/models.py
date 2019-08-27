@@ -10,6 +10,15 @@ from constance import config
 class ApprovalGroup(models.Model):
     name = models.CharField(max_length=128, unique=True)
 
+    APPROVAL_TYPE_FIRST_BOOKED = 'FIRST_BOOKED'
+    APPROVAL_TYPE_NO_APPROVAL = 'NO_APPROVAL'
+    APPROVAL_TYPE_CHOICES = (
+        (APPROVAL_TYPE_FIRST_BOOKED, 'First Booked'),
+        (APPROVAL_TYPE_NO_APPROVAL, 'No Approval'),
+    )
+    approval_type = models.CharField(default=APPROVAL_TYPE_FIRST_BOOKED, max_length=16,
+        choices=APPROVAL_TYPE_CHOICES,)
+
     class Meta:
         ordering = ["name"]
 
@@ -29,8 +38,12 @@ class ApprovalGroup(models.Model):
             # force getting all
 
         # 2 - decide
-        bookings_approved = bookings[0:1] # keep first booked
-        bookings_declined = bookings[1:]
+        if self.approval_type == APPROVAL_TYPE_NO_APPROVAL:
+            bookings_approved = []
+            bookings_declined = bookings
+        if self.approval_type == APPROVAL_TYPE_FIRST_BOOKED:
+            bookings_approved = bookings[0:1] # keep first booked
+            bookings_declined = bookings[1:]
         return bookings_approved, bookings_declined
 
     def execute_approval_qs(self, approved, declined):
@@ -40,6 +53,9 @@ class ApprovalGroup(models.Model):
         # 4 - insert logs
         with transaction.atomic():
             for b in approved:
+                # check if it's protected or not
+                if b.approval_protected:
+                    continue
                 b.calendly_data.approval_group = self
                 b.calendly_data.save()
                 if b.approval_status != Booking.APPROVAL_STATUS_APPROVED:
@@ -54,6 +70,9 @@ class ApprovalGroup(models.Model):
                                 action_flag=CHANGE)
 
             for b in declined:
+                # check if it's protected or not
+                if b.approval_protected:
+                    continue
                 b.calendly_data.approval_group = self
                 b.calendly_data.save()
                 if b.approval_status != Booking.APPROVAL_STATUS_DECLINED:

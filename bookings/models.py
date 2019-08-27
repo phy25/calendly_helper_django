@@ -54,6 +54,7 @@ class Booking(models.Model):
     )
     approval_status = models.CharField(default=APPROVAL_STATUS_NEW, max_length=16,
         choices=APPROVAL_STATUS_CHOICES,)
+    approval_protected = models.BooleanField(default=False)
 
     cancelled_at = models.DateTimeField(blank=True, null=True)
 

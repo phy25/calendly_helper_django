@@ -9,7 +9,7 @@ from django.utils.html import strip_tags
 
 def generate_student_reports_list(event_type_id):
     groups_list = ApprovalGroup.objects.filter(
-        #approval_type=ApprovalGroup.APPROVAL_TYPE_ONE_SPOT
+        approval_type=ApprovalGroup.APPROVAL_TYPE_FIRST_BOOKED
     ).prefetch_related(
         Prefetch('bookingcalendlydata_set',
             to_attr='current_bookings',
