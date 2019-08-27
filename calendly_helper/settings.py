@@ -133,6 +133,17 @@ LOGIN_URL = '/admin/login/'
 # Constance Config Options
 CONSTANCE_BACKEND = 'constance.backends.database.DatabaseBackend'
 
+CONSTANCE_ADDITIONAL_FIELDS = {
+    'APPROVAL_TYPE_CHOICES': ['django.forms.fields.ChoiceField', {
+        'widget': 'django.forms.Select',
+        'choices': (
+            ('FIRST_BOOKED', 'First Booked'),
+            ('DECLINE', 'Decline'),
+            ('MANUAL', 'Manual'),
+        )
+    }],
+}
+
 CONSTANCE_CONFIG = {
     'ANNOUNCEMENT': ('''<p class="mb-1">It may take some seconds to reflect your latest booking, while invalid bookings won\'t show up here.</p>
       <p class="mb-0" style="line-height:1.2"><small class="text-muted">"<strong>DUP BOOKING</strong>" means that the group has later bookings that will be released - usually time here will not change.</small></p>''', 'HTML announcement on student report', str),
@@ -141,7 +152,8 @@ CONSTANCE_CONFIG = {
     'WEBHOOK_TOKEN': (hashlib.md5(SECRET_KEY.encode()).hexdigest()[0:16], 'Secret Token checked on our end', str),
     'CALENDLY_WEBHOOK_TOKEN': ('', 'Calendly Access Token', str),
     'APPROVAL_USER_ID': (1, 'Approval System User ID (for logging purpose)', int),
-    'DEFAULT_EVENT_TYPE_ID': ('', 'Default event_type_id (leave blank for the latest one with booking spots)', str)
+    'APPROVAL_NO_GROUP_ACTION': ('DECLINE', '', 'APPROVAL_TYPE_CHOICES'),
+    'DEFAULT_EVENT_TYPE_ID': ('', 'Default event_type_id (leave blank for the latest one with booking spots)', str),
 }
 
 # import-export

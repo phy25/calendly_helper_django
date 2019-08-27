@@ -11,11 +11,11 @@ class ApprovalGroup(models.Model):
     name = models.CharField(max_length=128, unique=True)
 
     APPROVAL_TYPE_FIRST_BOOKED = 'FIRST_BOOKED'
-    APPROVAL_TYPE_DECLINED = 'DECLINED'
+    APPROVAL_TYPE_DECLINE = 'DECLINE'
     APPROVAL_TYPE_MANUAL = 'MANUAL'
     APPROVAL_TYPE_CHOICES = (
         (APPROVAL_TYPE_FIRST_BOOKED, 'First Booked'),
-        (APPROVAL_TYPE_DECLINED, 'Declined'),
+        (APPROVAL_TYPE_DECLINE, 'Decline'),
         (APPROVAL_TYPE_MANUAL, 'Manual'),
     )
     approval_type = models.CharField(default=APPROVAL_TYPE_FIRST_BOOKED, max_length=16,
@@ -47,7 +47,7 @@ class ApprovalGroup(models.Model):
             bookings = list(bookings)
             # force getting all
 
-        if self.approval_type == ApprovalGroup.APPROVAL_TYPE_DECLINED:
+        if self.approval_type == ApprovalGroup.APPROVAL_TYPE_DECLINE:
             bookings_approved = []
             bookings_declined = bookings
         if self.approval_type == ApprovalGroup.APPROVAL_TYPE_FIRST_BOOKED:
