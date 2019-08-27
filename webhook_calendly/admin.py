@@ -5,6 +5,7 @@ from django.urls import reverse
 from django.apps import apps
 from django.db.models import Count, Subquery, OuterRef
 from django.db.models.fields import IntegerField
+from django.contrib import messages
 from .models import ApprovalGroup, Invitee, BookingCalendlyData
 from bookings.models import Booking, CancelledBooking
 
@@ -14,6 +15,7 @@ from import_export.admin import ImportExportModelAdmin
 from bookings.admin import BookingAdmin, CancelledBookingAdmin
 
 from .admin_decorators import admin_link
+from .views.frontend import get_default_event_type_id
 
 
 class GroupCreationWidget(ForeignKeyWidget):
@@ -48,6 +50,25 @@ class GroupAdmin(admin.ModelAdmin):
     ]
     list_display = ('name', 'invitees_count', 'bookings_total')
     inlines = [InviteeInline]
+
+    def execute_approval(self, request, queryset):
+        event_type_id = get_default_event_type_id()
+        if not event_type_id:
+            self.message_user(request, 'There is no default event_type_id', messages.ERROR)
+            return
+
+        try:
+            for group in queryset:
+                approved, declined = group.get_approval_executor(event_type_id)
+                changed = group.execute_approval(approved, declined)
+            self.message_user(request, "Updated "+str(changed)+" approval in "+event_type_id+".")
+        except Exception as e:
+            self.message_user(request, str(e), messages.ERROR)
+
+    execute_approval.short_description = "Execute Default Approval"
+    execute_approval.allowed_permissions = ('change',)
+
+    actions = [execute_approval]
 
     def invitees_count(self, inst):
         return inst._invitees_count

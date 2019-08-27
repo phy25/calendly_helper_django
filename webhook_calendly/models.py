@@ -11,10 +11,12 @@ class ApprovalGroup(models.Model):
     name = models.CharField(max_length=128, unique=True)
 
     APPROVAL_TYPE_FIRST_BOOKED = 'FIRST_BOOKED'
-    APPROVAL_TYPE_NO_APPROVAL = 'NO_APPROVAL'
+    APPROVAL_TYPE_DECLINED = 'DECLINED'
+    APPROVAL_TYPE_MANUAL = 'MANUAL'
     APPROVAL_TYPE_CHOICES = (
         (APPROVAL_TYPE_FIRST_BOOKED, 'First Booked'),
-        (APPROVAL_TYPE_NO_APPROVAL, 'No Approval'),
+        (APPROVAL_TYPE_DECLINED, 'Declined'),
+        (APPROVAL_TYPE_MANUAL, 'Manual'),
     )
     approval_type = models.CharField(default=APPROVAL_TYPE_FIRST_BOOKED, max_length=16,
         choices=APPROVAL_TYPE_CHOICES,)
@@ -31,23 +33,34 @@ class ApprovalGroup(models.Model):
         """
         # 1 - get related bookings by email
         invitees_email = [i.email for i in self.invitee_set.only('email').all()]
-        bookings = list(Booking.objects.filter(
+        bookings = Booking.objects.filter(
             event_type_id=event_type_id,
             email__in=invitees_email
-            ).order_by('booked_at'))
-            # force getting all
+            ).order_by('booked_at')
 
         # 2 - decide
-        if self.approval_type == APPROVAL_TYPE_NO_APPROVAL:
+        if self.approval_type == ApprovalGroup.APPROVAL_TYPE_MANUAL:
+            bookings_approved = []
+            bookings_declined = []
+            self.update_approval_groups(bookings)
+        else:
+            bookings = list(bookings)
+            # force getting all
+
+        if self.approval_type == ApprovalGroup.APPROVAL_TYPE_DECLINED:
             bookings_approved = []
             bookings_declined = bookings
-        if self.approval_type == APPROVAL_TYPE_FIRST_BOOKED:
+        if self.approval_type == ApprovalGroup.APPROVAL_TYPE_FIRST_BOOKED:
             bookings_approved = bookings[0:1] # keep first booked
             bookings_declined = bookings[1:]
         return bookings_approved, bookings_declined
 
-    def execute_approval_qs(self, approved, declined):
+    def update_approval_groups(self, qs):
+        return qs.update(approval_group=self)
+
+    def execute_approval(self, approved, declined):
         content_type_id = ContentType.objects.get_for_model(Booking).pk
+        changed = 0
 
         # 3 - submit change
         # 4 - insert logs
@@ -68,6 +81,7 @@ class ApprovalGroup(models.Model):
                                 object_repr=str(b),
                                 change_message="Approved",
                                 action_flag=CHANGE)
+                    changed = changed + 1
 
             for b in declined:
                 # check if it's protected or not
@@ -85,7 +99,9 @@ class ApprovalGroup(models.Model):
                                 object_repr=str(b),
                                 change_message="Declined",
                                 action_flag=CHANGE)
+                    changed = changed + 1
 
+        return changed
 
 class Invitee(models.Model):
     email = models.EmailField(unique=True)
@@ -115,8 +131,8 @@ class BookingCalendlyData(models.Model):
             invitee = Invitee.objects.get(email=self.booking.email)
             # 2 - execute by group if it exists
             if invitee.group:
-                approved_qs, declined_qs = invitee.group.get_approval_executor(self.booking.event_type_id)
-                invitee.group.execute_approval_qs(approved_qs, declined_qs)
+                approved, declined = invitee.group.get_approval_executor(self.booking.event_type_id)
+                invitee.group.execute_approval(approved, declined)
         except ObjectDoesNotExist:
             # Assume no group, decline
             if self.booking.approval_status != Booking.APPROVAL_STATUS_DECLINED:

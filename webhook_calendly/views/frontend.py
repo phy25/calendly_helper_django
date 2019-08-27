@@ -55,14 +55,18 @@ def generate_student_reports_list(event_type_id):
     return groups_list, bookings_list
 
 
-def student_reports(request: HttpRequest):
+def get_default_event_type_id():
     if config.DEFAULT_EVENT_TYPE_ID:
         event_type_id = config.DEFAULT_EVENT_TYPE_ID
     else:
         latest_spot_booking = Booking.objects.order_by('-spot_start').only('event_type_id').first()
-
         if latest_spot_booking:
             event_type_id = latest_spot_booking.event_type_id
+
+    return event_type_id
+
+def student_reports(request: HttpRequest):
+    event_type_id = get_default_event_type_id()
 
     if event_type_id:
         declined_bookings_count = Booking.objects.filter(
