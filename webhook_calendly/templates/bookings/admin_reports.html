@@ -1,7 +1,7 @@
 {% extends "bookings/base.html" %}
 {% load i18n static %}
 {% block nav_title %}
-    <h5 class="my-0 mr-md-auto font-weight-normal">☢️ {{ config.SITE_TITLE }}</h5>{% endblock %}
+    <h5 class="my-0 mr-md-auto font-weight-normal">☢️ <a href="{% url 'student_reports' %}">{{ config.SITE_TITLE }}</a></h5>{% endblock %}
 {% block navbar %}
       <a class="p-2 text-dark" href="{% url 'admin:index' %}">Admin</a>
       <a class="p-2 text-dark" href="#groups">Groups</a>
