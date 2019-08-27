@@ -141,6 +141,7 @@ CONSTANCE_CONFIG = {
     'WEBHOOK_TOKEN': (hashlib.md5(SECRET_KEY.encode()).hexdigest()[0:16], 'Secret Token checked on our end', str),
     'CALENDLY_WEBHOOK_TOKEN': ('', 'Calendly Access Token', str),
     'APPROVAL_USER_ID': (1, 'Approval System User ID (for logging purpose)', int),
+    'DEFAULT_EVENT_TYPE_ID': ('', 'Default event_type_id (leave blank for the latest one with booking spots)', str)
 }
 
 # import-export
