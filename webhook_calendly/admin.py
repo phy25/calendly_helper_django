@@ -188,12 +188,13 @@ class BookingCalendlyInline(admin.StackedInline):
 
 
 class CancelledBookingCalendlyInline(BookingCalendlyInline):
-    def get_readonly_fields(self, request, obj=None):
-        # make all fields readonly
-        readonly_fields = list(set(
-            [field.name for field in self.model._meta.fields]
-        ))
-        return readonly_fields
+    show_change_link = False
+
+    def has_add_permission(self, request, obj=None):
+        return False
+
+    def has_change_permission(self, request, obj=None):
+        return False
 
 
 class BookingCalendlyAdmin(BookingAdmin):
