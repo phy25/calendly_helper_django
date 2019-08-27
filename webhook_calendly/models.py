@@ -148,14 +148,15 @@ class BookingCalendlyData(models.Model):
                 approved, declined = invitee.group.get_approval_executor(self.booking.event_type_id)
                 invitee.group.execute_approval(approved, declined)
         except ObjectDoesNotExist:
-            # Assume no group, decline
-            if self.booking.approval_status != Booking.APPROVAL_STATUS_DECLINED:
-                self.booking.approval_status = Booking.APPROVAL_STATUS_DECLINED
-                self.booking.save()
-                LogEntry.objects.log_action(
-                                user_id=config.APPROVAL_USER_ID,
-                                content_type_id=ContentType.objects.get_for_model(self.booking).pk,
-                                object_id=self.booking.pk,
-                                object_repr=str(self.booking),
-                                change_message="Declined (no group)",
-                                action_flag=CHANGE)
+            # Assume no group
+            if config.APPROVAL_NO_GROUP_ACTION == ApprovalGroup.APPROVAL_TYPE_DECLINE:
+                if self.booking.approval_status != Booking.APPROVAL_STATUS_DECLINED:
+                    self.booking.approval_status = Booking.APPROVAL_STATUS_DECLINED
+                    self.booking.save()
+                    LogEntry.objects.log_action(
+                                    user_id=config.APPROVAL_USER_ID,
+                                    content_type_id=ContentType.objects.get_for_model(self.booking).pk,
+                                    object_id=self.booking.pk,
+                                    object_repr=str(self.booking),
+                                    change_message="Declined (no group)",
+                                    action_flag=CHANGE)

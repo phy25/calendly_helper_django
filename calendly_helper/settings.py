@@ -137,7 +137,6 @@ CONSTANCE_ADDITIONAL_FIELDS = {
     'APPROVAL_TYPE_CHOICES': ['django.forms.fields.ChoiceField', {
         'widget': 'django.forms.Select',
         'choices': (
-            ('FIRST_BOOKED', 'First Booked'),
             ('DECLINE', 'Decline'),
             ('MANUAL', 'Manual'),
         )
