@@ -9,4 +9,83 @@
 {{ block.super }}{% endblock %}
 
 {% block content %}
+  <form action="" method="GET">
+    {{ event_type_ids_form }}
+    <button type="submit">Go</button>
+  </form>
+  <h4 id="groups" class="mt-4">Groups List</h5>
+  <div class="table-responsive">
+    <table class="table table-sm table-striped table-hover text-nowrap">
+      <thead>
+        <tr>
+          <th scope="col">Group</th>
+          <th scope="col">Members</th>
+          <th scope="col">Spots</th>
+        </tr>
+      </thead>
+      <tbody>
+{% for g in groups_list %}
+        <tr class="">
+          <th scope="row"><a href="{% if g.is_non_group %}{% url 'admin:webhook_calendly_invitee_changelist' %}{% else %}{% url 'admin:webhook_calendly_approvalgroup_change' g.id %}?_popup=1{% endif %}" class="popup">{{ g.name }}</a></th>
+          <td>{% for invitee in g.invitee_set.all %}{{ invitee.email }}{% if not forloop.last %}, {% endif %}{% endfor %}</td>
+          <td>
+            {% for gg in g.approval_statuses.APPROVED %}
+            <span class="{% if forloop.first %}text-success{% endif %}">{{ gg.booking.spot_start }}</span><a href="{% url 'admin:bookings_booking_change' gg.booking.id %}?_popup=1" class="popup">#{{ gg.booking.id }}</a>
+            <a href="{% url 'admin:bookings_booking_history' gg.booking.id %}" class="popup">📜</a>
+            <span class="text-success">{{ gg.booking.booked_at|date:"c" }}</span> by {{ gg.booking.email }}<br>
+            {% empty %}{% if not g.is_non_group %}None{% endif %}{% endfor %}
+
+            {% for gg in g.approval_statuses.DECLINED %}
+            {{ gg.booking.spot_start }}<a href="{% url 'admin:bookings_booking_change' gg.booking.id %}?_popup=1" class="popup">#{{ gg.booking.id }}</a>
+            <a href="{% url 'admin:bookings_booking_history' gg.booking.id %}" class="popup">📜</a>
+            <span class="text-danger">{{ gg.booking.booked_at|date:"c" }}</span> by <a href="https://calendly.com/cancellations/{{ gg.calendly_uuid }}" target="_blank" title="Cancel" class="popup">{{ gg.booking.email }}</a> <a href="https://calendly.com/reschedulings/{{ gg.calendly_uuid }}" target="_blank" class="popup" title="Reschedule">🖊️</a><br>
+            {% endfor %}
+
+            {% for gg in g.approval_statuses.NEW %}
+            <span class="text-primary">{{ gg.booking.spot_start }}<a href="{% url 'admin:bookings_booking_change' gg.booking.id %}?_popup=1" class="popup">#{{ gg.booking.id }}</a>
+            <a href="{% url 'admin:bookings_booking_history' gg.booking.id %}" class="popup">📜</a>
+            {{ gg.booking.booked_at|date:"c" }} by {{ gg.booking.email }}</a></span><br>
+            {% endfor %}
+
+            {% if g.approval_statuses.DECLINED %}{% if g.is_non_group %}
+            <textarea rows="1" cols="80">Your email is not listed in any group. If you have any questions please reply to this email.</textarea>{% else %}
+            <textarea rows="1" cols="80">Your group, {{ g.name }}, has already booked {{ g.first_booking.booking.spot_start|date:"D, M j g:iA" }}, by {{ g.first_booking.booking.email }}, at {{ g.first_booking.booking.booked_at|date:"M j g:iA" }}. If you have any questions please reply to this email.</textarea>
+            {% endif %}{% endif %}
+            </td>
+        </tr>{% endfor %}
+      </tbody>
+    </table>
+  </div>
+  <h4 id="bookings" class="mt-4">Bookings List</h5>
+  <div class="table-responsive">
+    <table class="table table-sm table-striped text-nowrap table-hover">
+      <thead>
+        <tr>
+          <th scope="col">Date</th>
+          <th scope="col">Time</th>
+          <th scope="col">Group</th>
+          <th scope="col">Members</th>
+          <th scope="col">Booked At</th>
+        </tr>
+      </thead>
+      <tbody>{# we assume that it's in the same day #}
+{% for b in bookings_list %}
+        <tr><td>{{ b.booking.spot_start|date:"D, M j" }}</td><td>{{ b.booking.spot_start|date:"P" }}-{{ b.booking.spot_end|date:"P" }}</td><td>{{ b.approval_group.name }}</td><td>{% for invitee in b.approval_group.invitee_set.all %}{{ invitee.email }}{% if not forloop.last %}, {% endif %}{% endfor %}</td><td>{{ b.booking.booked_at|date:"c" }}</td></tr>{% endfor %}
+      </tbody>
+    </table>
+  </div>
+<script type="text/javascript">
+var a_p = document.querySelectorAll('a.popup');
+function a_p_o(event){
+  event.preventDefault();
+  window.open(this.href, "popup", "resizable,scrollbars,width=820,height=720");
+}
+function dismissChangeRelatedObjectPopup(win, objId, newRepr, newId){
+  win.close();
+  location.reload();
+}
+for(var i in a_p){
+  a_p[i].addEventListener("click", a_p_o);
+}
+</script>
 {% endblock %}
