@@ -26,3 +26,4 @@ Bookings List
 {% endfor %}
 _________________________________________
 Built with Calendly, Django, and efforts.
+https://github.com/phy25/calendly_helper_django
