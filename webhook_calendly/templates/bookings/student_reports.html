@@ -1,6 +1,9 @@
 {% extends "bookings/base.html" %}
 {% load i18n static %}
 {% block navbar %}
+{% if request.user.is_active and request.user.is_staff %}
+      <a class="p-2 text-dark" href="{% url 'admin_reports' %}">Admin</a>
+{% endif %}
       <a class="p-2 text-dark" href="#groups">Groups</a>
       <a class="p-2 text-dark" href="#bookings">Bookings</a>
 {{ block.super }}{% endblock %}

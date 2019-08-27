@@ -88,3 +88,7 @@ def student_reports(request: HttpRequest):
         return render(request, 'bookings/student_reports.txt', context, content_type="text/plain")
     else:
         return render(request, 'bookings/student_reports.html', context)
+
+def admin_reports(request: HttpRequest):
+    context = {}
+    return render(request, 'bookings/admin_reports.html', context)
