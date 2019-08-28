@@ -69,6 +69,7 @@ def generate_student_reports_list(event_type_id):
 
 
 def get_default_event_type_id():
+    event_type_id = None
     if config.DEFAULT_EVENT_TYPE_ID:
         event_type_id = config.DEFAULT_EVENT_TYPE_ID
     else:
@@ -81,6 +82,9 @@ def get_default_event_type_id():
 
 def student_reports(request: HttpRequest):
     event_type_id = get_default_event_type_id()
+    declined_bookings_count = 0
+    groups_list = []
+    bookings_list = []
 
     if event_type_id:
         groups_list, bookings_list = generate_student_reports_list(event_type_id)

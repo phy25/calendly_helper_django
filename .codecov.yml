@@ -3,6 +3,8 @@ coverage:
   precision: 2
   status:
     project:
-      target: 0.5
+      default:
+        target: "50%"
     patch: # temporarily disabled
-      target: 0
+      default:
+        target: "0%"
