@@ -1,8 +1,6 @@
 language: python
-services:
-  - postgresql
-env:
-  - export DATABASE_URL=postgres://postgres:@localhost:5432/calendly_helper_test
+addons:
+  postgresql: "9.4"
 python:
   - "3.6"
   - "3.7"
@@ -15,11 +13,11 @@ install:
   - pip install codecov
 
 before_script:
-  - psql -c 'create database calendly_helper_test;' -U postgres
+  - export DATABASE_URL=postgres://postgres:@localhost:5432/calendly_helper
+  - psql -c 'create database calendly_helper;' -U postgres
 
 script:
-  - python manage.py migrate
-  - coverage run --source='.' --omit='env/*,*/migrations/*,manage.py' manage.py test
+  - coverage run --source='.' --omit='env/*,*/migrations/*,manage.py' manage.py test --noinput
 
 after_script:
   - codecov
