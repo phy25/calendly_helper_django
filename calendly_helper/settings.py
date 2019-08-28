@@ -159,6 +159,7 @@ CONSTANCE_CONFIG = {
     'APPROVAL_USER_ID': (1, 'Approval System User ID (for logging purpose)', int),
     'APPROVAL_NO_GROUP_ACTION': ('DECLINE', '', 'APPROVAL_TYPE_CHOICES'),
     'DEFAULT_EVENT_TYPE_ID': ('', 'Default event_type_id (leave blank for the latest one with booking spots)', str),
+    'SHOW_DECLINED_COUNT_FRONTEND': (True, '', bool)
 }
 
 # import-export

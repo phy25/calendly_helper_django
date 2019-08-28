@@ -90,7 +90,8 @@ def student_reports(request: HttpRequest):
         groups_list, bookings_list = generate_student_reports_list(event_type_id)
 
         # This includes non-group number
-        declined_bookings_count = sum(map(lambda g: g.declined_bookings_count, groups_list))
+        if config.SHOW_DECLINED_COUNT_FRONTEND:
+            declined_bookings_count = sum(map(lambda g: g.declined_bookings_count, groups_list))
 
     context = {
         'announcement': config.ANNOUNCEMENT,
