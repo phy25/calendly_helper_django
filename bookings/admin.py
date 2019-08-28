@@ -12,7 +12,8 @@ class BookingAdmin(admin.ModelAdmin):
     list_display = ('email', 'event_type_id', 'spot_start', 'booked_at', 'approval_status', 'approval_protected')
     list_filter = ('approval_status', 'booked_at', 'spot_start', 'event_type_id')
 
-    content_type_id = ContentType.objects.get_for_model(Booking).pk
+    def get_content_type_id(self):
+        return ContentType.objects.get_for_model(Booking).pk
 
     def approve_and_protect(self, request, queryset):
         try:
@@ -20,7 +21,7 @@ class BookingAdmin(admin.ModelAdmin):
             for b in queryset:
                 LogEntry.objects.log_action(
                                     user_id=request.user.id,
-                                    content_type_id=self.content_type_id,
+                                    content_type_id=self.get_content_type_id(),
                                     object_id=b.pk,
                                     object_repr=str(b),
                                     change_message="Approved and protected",
@@ -37,7 +38,7 @@ class BookingAdmin(admin.ModelAdmin):
             for b in queryset:
                 LogEntry.objects.log_action(
                                     user_id=request.user.id,
-                                    content_type_id=self.content_type_id,
+                                    content_type_id=self.get_content_type_id(),
                                     object_id=b.pk,
                                     object_repr=str(b),
                                     change_message="Declined and protected",
@@ -54,7 +55,7 @@ class BookingAdmin(admin.ModelAdmin):
             for b in queryset:
                 LogEntry.objects.log_action(
                                     user_id=request.user.id,
-                                    content_type_id=self.content_type_id,
+                                    content_type_id=self.get_content_type_id(),
                                     object_id=b.pk,
                                     object_repr=str(b),
                                     change_message="Reseted approval",
