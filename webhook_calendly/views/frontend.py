@@ -100,7 +100,7 @@ def student_reports(request: HttpRequest):
         'bookings_list': bookings_list,
     }
 
-    if 'text/plain' in request.META.get('HTTP_ACCEPT') or request.GET.get('geek'):
+    if 'text/plain' in str(request.META.get('HTTP_ACCEPT')) or request.GET.get('geek'):
         context['announcement'] = strip_tags(context['announcement'])
         return render(request, 'bookings/student_reports.txt', context, content_type="text/plain")
     else:
