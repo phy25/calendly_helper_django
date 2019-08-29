@@ -32,7 +32,7 @@ before_script:
 
 script:
   - python manage.py collectstatic
-  - coverage run --source='.' --omit='env/*,*/migrations/*,manage.py' manage.py test --noinput
+  - coverage run --source='.' --omit='calendly_helper/*,env/*,*/migrations/*,manage.py' manage.py test --noinput
 
 after_script:
   - codecov
