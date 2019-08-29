@@ -1,9 +1,10 @@
 from django.test import TestCase, Client
 from django.urls import reverse
+from django.contrib.auth.models import User
 from constance import config
+
 from bookings.models import Booking
 from .models import ApprovalGroup, Invitee, BookingCalendlyData
-
 
 class StudentViewTests(TestCase):
     def setUp(self):
@@ -74,3 +75,20 @@ class StudentViewTests(TestCase):
         self.assertEqual(response.status_code, 200)
         self.assertEqual(len(response.context['groups_list']), 1)
         self.assertEqual(response.context['declined_bookings_count'], 0)
+
+class HookAdminTest(TestCase):
+    user = None
+
+    def setUp(self):
+        self.user = User.objects.create(
+            username="test", password="test",
+            is_staff=True, is_active=True, is_superuser=True,
+        )
+
+    def test_redirect(self):
+        client = Client()
+        client.force_login(self.user)
+        response = client.get(reverse('admin:webhook_calendly_hook_changelist'), follow=True)
+
+        self.assertEqual(response.status_code, 400) # No token has been set up yet
+        self.assertTrue(reverse('list_hooks') in response.redirect_chain[0][0])
