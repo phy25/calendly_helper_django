@@ -30,7 +30,7 @@ def webhook_post(request: HttpRequest):
             is_cancelled = True
             obj = BookingCalendlyData.objects.get(calendly_uuid=payload['invitee']['uuid'])
             # if obj does not exist, jump to create new one
-            obj.calendly_data = payload
+            obj.payload = payload
             obj.save()
         elif j['event'] == 'invitee.created':
             obj = BookingCalendlyData.objects.get(calendly_uuid=payload['invitee']['uuid'])
