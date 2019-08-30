@@ -61,10 +61,10 @@ def webhook_post(request: HttpRequest):
             obj.save()
         except KeyError:
             return HttpResponseBadRequest('data not complete')
-    finally:
-        if is_cancelled:
-            obj.booking.delete() # cancel
-        # run approval
-        obj.run_approval()
+    # final
+    if is_cancelled:
+        obj.booking.delete() # cancel
+    # run approval
+    obj.run_approval()
 
     return HttpResponse('OK')
