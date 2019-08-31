@@ -10,8 +10,6 @@ from .models import ApprovalGroup, Invitee, BookingCalendlyData
 import json
 
 class StudentViewTests(TestCase):
-    self.client = None
-
     def setUp(self):
         self.client = Client()
         ag = ApprovalGroup.objects.create(
