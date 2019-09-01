@@ -16,9 +16,6 @@ class BookingSoftDeletionManager(models.Manager):
             return models.QuerySet(self.model).exclude(cancelled_at=None)
         return BookingSoftDeletionQuerySet(self.model)
 
-    def hard_delete(self):
-        return self.get_queryset().hard_delete()
-
 
 class BookingSoftDeletionQuerySet(models.QuerySet):
     def delete(self):
