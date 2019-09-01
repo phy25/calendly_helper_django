@@ -220,7 +220,7 @@ class ApprovalTests(TestCase):
 
     def test_get_approval_executor_declined(self):
         ag = ApprovalGroup.objects.get(name="Group 1")
-        ag.approval_type = ApprovalGroup.APPROVAL_TYPE_DECLINED
+        ag.approval_type = ApprovalGroup.APPROVAL_TYPE_DECLINE
 
         Invitee.objects.create(email="aa@localhost", group=ag)
 
@@ -278,6 +278,10 @@ class ApprovalTests(TestCase):
         )
 
         changed = ag.execute_approval([bc2.booking], [bc3.booking], fake=True)
+        self.assertEqual(changed[0].approval_status, Booking.APPROVAL_STATUS_APPROVED)
+        self.assertEqual(changed[1].approval_status, Booking.APPROVAL_STATUS_DECLINED)
+        self.assertEqual(changed[0].calendly_data.approval_group, ag)
+        self.assertEqual(changed[1].calendly_data.approval_group, ag)
 
         bc2.refresh_from_db()
         bc3.refresh_from_db()
@@ -285,10 +289,6 @@ class ApprovalTests(TestCase):
         self.assertEqual(bc3.booking.approval_status, Booking.APPROVAL_STATUS_NEW)
         self.assertEqual(bc2.approval_group, None)
         self.assertEqual(bc3.approval_group, None)
-        self.assertEqual(changed[0].approval_status, Booking.APPROVAL_STATUS_APPROVED)
-        self.assertEqual(changed[1].approval_status, Booking.APPROVAL_STATUS_DECLINED)
-        self.assertEqual(changed[0].calendly_data.approval_group, ag)
-        self.assertEqual(changed[1].calendly_data.approval_group, ag)
 
     def test_execute_approval_meta(self):
         "approval_group, approval_status (approved/declined) and log_action, returns changed"

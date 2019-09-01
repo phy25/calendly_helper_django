@@ -68,12 +68,14 @@ class ApprovalGroup(models.Model):
             for b in approved:
                 if b.approval_protected:
                     continue
+                b.calendly_data.approval_group = self
                 if b.approval_status != Booking.APPROVAL_STATUS_APPROVED:
                     b.approval_status = Booking.APPROVAL_STATUS_APPROVED
                     changed.append(b)
             for b in declined:
                 if b.approval_protected:
                     continue
+                b.calendly_data.approval_group = self
                 if b.approval_status != Booking.APPROVAL_STATUS_DECLINED:
                     b.approval_status = Booking.APPROVAL_STATUS_DECLINED
                     changed.append(b)
