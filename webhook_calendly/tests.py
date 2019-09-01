@@ -354,15 +354,29 @@ class ApprovalTests(TestCase):
         self.assertEqual(bc.approval_group, None)
         self.assertEqual(bc.booking.approval_status, Booking.APPROVAL_STATUS_NEW)
 
+    def _test_run_approval_meta(self, var):
+        ag, bc2, bc3 = var
+
+        bc2.refresh_from_db()
+        bc3.refresh_from_db()
+        bc1 = BookingCalendlyData.objects.get(calendly_uuid="2")
+        self.assertEqual(bc1.booking.approval_status, Booking.APPROVAL_STATUS_APPROVED)
+        self.assertEqual(bc2.booking.approval_status, Booking.APPROVAL_STATUS_DECLINED)
+        self.assertEqual(bc3.booking.approval_status, Booking.APPROVAL_STATUS_DECLINED)
+        self.assertEqual(bc1.approval_group, ag)
+        self.assertEqual(bc2.approval_group, ag)
+        self.assertEqual(bc3.approval_group, ag)
+        self.assertEqual(LogEntry.objects.all().count(), 3)
+
     def test_bc_run_approval_group_bc2(self):
         ag, bc2, bc3 = self._execute_approval_init()
         bc2.run_approval()
-        self._test_execute_approval_meta(var=(ag, bc2, bc3, None,), fake=False)
+        self._test_run_approval_meta(var=(ag, bc2, bc3,))
 
     def test_bc_run_approval_group_bc3(self):
         ag, bc2, bc3 = self._execute_approval_init()
         bc3.run_approval()
-        self._test_execute_approval_meta(var=(ag, bc2, bc3, None,), fake=False)
+        self._test_run_approval_meta(var=(ag, bc2, bc3,))
 
     def test_bc_run_approval_nogroup_decline(self):
         "APPROVAL_TYPE_DECLINE"
