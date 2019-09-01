@@ -24,7 +24,7 @@ class ViewTests(TestCase):
     def test_ping(self):
         response = self.client.get(reverse('ping'))
         self.assertEqual(response.status_code, 200)
-        self.assertEqual(response.content, 'pong')
+        self.assertEqual(response.content.decode(), 'pong')
 
 class BookingTests(TestCase):
     def setUp(self):
