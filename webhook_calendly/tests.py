@@ -313,10 +313,7 @@ class ApprovalTests(TestCase):
     def _test_execute_approval_protected(self, var, fake):
         ag, bc2, bc3 = var
         changed = ag.execute_approval([bc2.booking], [bc3.booking], fake=fake)
-        self.assertEqual(changed[0].approval_status, Booking.APPROVAL_STATUS_NEW)
-        self.assertEqual(changed[1].approval_status, Booking.APPROVAL_STATUS_NEW)
-        self.assertEqual(changed[0].calendly_data.approval_group, None)
-        self.assertEqual(changed[1].calendly_data.approval_group, None)
+        self.assertEqual(len(changed), 0)
 
         bc2.refresh_from_db()
         bc3.refresh_from_db()
@@ -343,15 +340,52 @@ class ApprovalTests(TestCase):
 
     def test_bc_run_approval_noemail(self):
         "noemail should be untouched"
+        bc = BookingCalendlyData.objects.create(
+            calendly_uuid="10",
+            booking=Booking.objects.create(
+                event_type_id="2",
+                spot_start="2019-01-01 14:40:00-0400",
+                spot_end="2019-01-01 14:50:00-0400",
+            ),
+        )
+        bc.run_approval()
+        self.assertEqual(bc.approval_group, None)
+        self.assertEqual(bc.booking.approval_status, Booking.APPROVAL_STATUS_NEW)
 
     def test_bc_run_approval_group(self):
         pass
 
     def test_bc_run_approval_nogroup_decline(self):
         "APPROVAL_TYPE_DECLINE"
+        config.APPROVAL_NO_GROUP_ACTION = ApprovalGroup.APPROVAL_TYPE_DECLINE
+        bc = BookingCalendlyData.objects.create(
+            calendly_uuid="10",
+            booking=Booking.objects.create(
+                email="nope@localhost",
+                event_type_id="2",
+                spot_start="2019-01-01 14:40:00-0400",
+                spot_end="2019-01-01 14:50:00-0400",
+            ),
+        )
+        bc.run_approval()
+        self.assertEqual(bc.approval_group, None)
+        self.assertEqual(bc.booking.approval_status, Booking.APPROVAL_STATUS_DECLINED)
 
     def test_bc_run_approval_nogroup_manual(self):
         "APPROVAL_TYPE_MANUAL"
+        config.APPROVAL_NO_GROUP_ACTION = ApprovalGroup.APPROVAL_TYPE_MANUAL
+        bc = BookingCalendlyData.objects.create(
+            calendly_uuid="10",
+            booking=Booking.objects.create(
+                email="nope@localhost",
+                event_type_id="2",
+                spot_start="2019-01-01 14:40:00-0400",
+                spot_end="2019-01-01 14:50:00-0400",
+            ),
+        )
+        bc.run_approval()
+        self.assertEqual(bc.approval_group, None)
+        self.assertEqual(bc.booking.approval_status, Booking.APPROVAL_STATUS_NEW)
 
 
 class HookAdminTests(TestCase):
