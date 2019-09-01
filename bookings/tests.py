@@ -5,6 +5,7 @@ from django.urls import reverse
 from django.contrib.auth.models import User
 from django.contrib.admin.models import LogEntry, CHANGE
 from django.contrib.admin import AdminSite
+from django.contrib.messages.storage.fallback import FallbackStorage
 
 from .models import Booking, CancelledBooking
 from .admin import BookingAdmin, CancelledBookingAdmin
@@ -53,6 +54,8 @@ class BookingAdminTests(TestCase):
 
         request = self.factory.post(reverse('admin:bookings_booking_changelist'))
         request.user = self.user
+        setattr(request, 'session', {})
+        setattr(request, '_messages', FallbackStorage(request))
         queryset = Booking.objects.all()
         all_count = queryset.count()
         ma = BookingAdmin(Booking, self.site)
@@ -72,6 +75,8 @@ class BookingAdminTests(TestCase):
 
         request = self.factory.post(reverse('admin:bookings_booking_changelist'))
         request.user = self.user
+        setattr(request, 'session', {})
+        setattr(request, '_messages', FallbackStorage(request))
         queryset = Booking.objects.all()
         all_count = queryset.count()
         ma = BookingAdmin(Booking, self.site)
@@ -91,6 +96,8 @@ class BookingAdminTests(TestCase):
 
         request = self.factory.post(reverse('admin:bookings_booking_changelist'))
         request.user = self.user
+        setattr(request, 'session', {})
+        setattr(request, '_messages', FallbackStorage(request))
         queryset = Booking.objects.all()
         all_count = queryset.count()
         ma = BookingAdmin(Booking, self.site)
