@@ -74,10 +74,6 @@ class CancelledBookingAdmin(admin.ModelAdmin):
     list_display = ('email', 'event_type_id', 'spot_start', 'booked_at', 'approval_status')
     list_filter = ('approval_status', 'cancelled_at', 'spot_start', 'event_type_id')
 
-    #def get_queryset(self, request):
-    #    qs = super(CancelledBookingAdmin, self).get_queryset(request)
-    #    return qs.cancelled()
-
     def has_add_permission(self, request, obj=None):
         return False
 
