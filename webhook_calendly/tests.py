@@ -8,6 +8,7 @@ from unittest.mock import Mock
 
 from bookings.models import Booking
 from .models import ApprovalGroup, Invitee, BookingCalendlyData
+from .admin_decorators import admin_link
 import json
 
 class StudentViewTests(TestCase):
@@ -514,3 +515,31 @@ class HookPostTests(TestCase):
     def test_bad_event_field(self):
         response = self.client.post(reverse('webhook_post')+'?token='+config.WEBHOOK_TOKEN, data=self.json_bad.replace('"event":"invitee.created",', ''), content_type='application/json')
         self.assertEqual(response.status_code, 400)
+
+class AdminDecoratorTests(TestCase):
+    def setUp(self):
+        ag1 = ApprovalGroup.objects.create(name="Group 1", approval_type=ApprovalGroup.APPROVAL_TYPE_FIRST_BOOKED)
+        Invitee.objects.create(email="a@localhost", group=ag1)
+
+        self.bc = BookingCalendlyData.objects.create(
+            calendly_uuid="2",
+            booking=Booking.objects.create(
+                email="a@localhost",
+                event_type_id="2",
+                spot_start="2019-01-01 14:40:00-0400",
+                spot_end="2019-01-01 14:50:00-0400",
+                approval_status=Booking.APPROVAL_STATUS_DECLINED,
+            ),
+        )
+
+    def test_admin_link(self):
+        @admin_link('booking', 'Booking')
+        def booking_email(bc, booking):
+            return booking.email
+
+        html = booking_email(self.bc, self.bc.booking)
+        self.assertTrue('<a href="' in html)
+        self.assertTrue('a@localhost' in html)
+        self.assertTrue(reverse('admin:bookings_booking_change', args=(self.bc.booking.pk,)) in html)
+        self.assertEqual(booking_email.short_description, 'Booking')
+        self.assertEqual(booking_email.allow_tags, True)
