@@ -278,12 +278,12 @@ class ApprovalTests(TestCase):
         return ag, bc2, bc3
 
     def _test_execute_approval_meta(self, var, fake):
-        ag, bc2, bc3 = var
-        changed = ag.execute_approval([bc2.booking], [bc3.booking], fake=fake)
-        self.assertEqual(changed[0].approval_status, Booking.APPROVAL_STATUS_APPROVED)
-        self.assertEqual(changed[1].approval_status, Booking.APPROVAL_STATUS_DECLINED)
-        self.assertEqual(changed[0].calendly_data.approval_group, ag)
-        self.assertEqual(changed[1].calendly_data.approval_group, ag)
+        ag, bc2, bc3, changed = var
+        if changed != None:
+            self.assertEqual(changed[0].approval_status, Booking.APPROVAL_STATUS_APPROVED)
+            self.assertEqual(changed[1].approval_status, Booking.APPROVAL_STATUS_DECLINED)
+            self.assertEqual(changed[0].calendly_data.approval_group, ag)
+            self.assertEqual(changed[1].calendly_data.approval_group, ag)
 
         bc2.refresh_from_db()
         bc3.refresh_from_db()
@@ -303,12 +303,14 @@ class ApprovalTests(TestCase):
     def test_execute_approval_meta(self):
         "approval_group, approval_status (approved/declined) and log_action, returns changed"
         ag, bc2, bc3 = self._execute_approval_init()
-        self._test_execute_approval_meta(var=(ag, bc2, bc3, ), fake=False)
+        changed = ag.execute_approval([bc2.booking], [bc3.booking], fake=False)
+        self._test_execute_approval_meta(var=(ag, bc2, bc3, changed,), fake=False)
 
     def test_execute_approval_fake(self):
         "make sure fake does not change anything and returns the correct result"
         ag, bc2, bc3 = self._execute_approval_init()
-        self._test_execute_approval_meta(var=(ag, bc2, bc3, ), fake=True)
+        changed = ag.execute_approval([bc2.booking], [bc3.booking], fake=True)
+        self._test_execute_approval_meta(var=(ag, bc2, bc3, changed,), fake=True)
 
     def _test_execute_approval_protected(self, var, fake):
         ag, bc2, bc3 = var
@@ -352,8 +354,15 @@ class ApprovalTests(TestCase):
         self.assertEqual(bc.approval_group, None)
         self.assertEqual(bc.booking.approval_status, Booking.APPROVAL_STATUS_NEW)
 
-    def test_bc_run_approval_group(self):
-        pass
+    def test_bc_run_approval_group_bc2(self):
+        ag, bc2, bc3 = self._execute_approval_init()
+        bc2.run_approval()
+        self._test_execute_approval_meta(var=(ag, bc2, bc3, None,), fake=False)
+
+    def test_bc_run_approval_group_bc3(self):
+        ag, bc2, bc3 = self._execute_approval_init()
+        bc3.run_approval()
+        self._test_execute_approval_meta(var=(ag, bc2, bc3, None,), fake=False)
 
     def test_bc_run_approval_nogroup_decline(self):
         "APPROVAL_TYPE_DECLINE"
