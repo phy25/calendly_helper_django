@@ -4,6 +4,7 @@ from django.contrib.auth.models import User
 from django.utils.dateparse import parse_datetime
 from django.contrib.admin.models import LogEntry
 from constance import config
+from unittest.mock import Mock
 
 from bookings.models import Booking
 from .models import ApprovalGroup, Invitee, BookingCalendlyData
@@ -135,7 +136,7 @@ class ApprovalTests(TestCase):
             ),
         )
 
-    def tests_update_approval_groups(self):
+    def test_update_approval_groups(self):
         'Protected booking still needs to be updated'
         email = "a@localhost"
         qs = Booking.objects.filter(email=email)
@@ -145,7 +146,7 @@ class ApprovalTests(TestCase):
 
         self.assertEqual(Booking.objects.filter(email=email, calendly_data__approval_group=ag).count(), 2)
 
-    def tests_update_manual_approval_groups(self):
+    def test_update_manual_approval_groups(self):
         'Protected booking with manual approval group still needs to be updated'
         email = "a@localhost"
         qs = Booking.objects.filter(email=email)
@@ -155,6 +156,64 @@ class ApprovalTests(TestCase):
         ag.update_approval_groups(qs)
 
         self.assertEqual(Booking.objects.filter(email=email, calendly_data__approval_group=ag).count(), 2)
+
+    def test_get_approval_executor_manual(self):
+        def _update_approval_groups(bookings):
+            self.assertEqual(len(bookings), 2)
+            raise GeneratorExit
+
+        ag = ApprovalGroup.objects.get(name="Group 1")
+        ag.approval_type = ApprovalGroup.APPROVAL_TYPE_MANUAL
+
+        BookingCalendlyData.objects.create(
+            calendly_uuid="5",
+            booking=Booking.objects.create(
+                email="a@localhost",
+                event_type_id="2",
+                spot_start="2019-01-01 15:40:00-0400",
+                spot_end="2019-01-01 15:50:00-0400",
+                approval_status=Booking.APPROVAL_STATUS_NEW,
+            ),
+        )
+        ag.update_approval_groups = _update_approval_groups
+        with self.assertRaises(GeneratorExit):
+            bookings_approved, bookings_declined = ag.get_approval_executor("2")
+            self.assertEqual(len(bookings_approved), 0)
+            self.assertEqual(len(bookings_declined), 0)
+
+    def test_get_approval_executor_first_booked(self):
+        ag = ApprovalGroup.objects.get(name="Group 1")
+        ag.approval_type = ApprovalGroup.APPROVAL_TYPE_FIRST_BOOKED
+
+        Invitee.objects.create(email="aa@localhost", group=ag)
+
+        bc2 = BookingCalendlyData.objects.create(
+            calendly_uuid="5",
+            booking=Booking.objects.create(
+                email="a@localhost",
+                event_type_id="2",
+                spot_start="2019-01-01 15:40:00-0400",
+                spot_end="2019-01-01 15:50:00-0400",
+                approval_status=Booking.APPROVAL_STATUS_NEW,
+            ),
+        )
+
+        bc3 = BookingCalendlyData.objects.create(
+            calendly_uuid="6",
+            booking=Booking.objects.create(
+                email="aa@localhost",
+                event_type_id="2",
+                spot_start="2019-01-01 10:00:00-0400",
+                spot_end="2019-01-01 10:10:00-0400",
+                approval_status=Booking.APPROVAL_STATUS_NEW,
+            ),
+        )
+        # spot early, but booked late
+
+        bookings_approved, bookings_declined = ag.get_approval_executor("2")
+        self.assertEqual(len(bookings_approved), 1)
+        self.assertEqual(len(bookings_declined), 2)
+        self.assertEqual(set(bookings_declined), set([bc2.booking, bc3.booking]))
 
 class HookAdminTests(TestCase):
     def setUp(self):
