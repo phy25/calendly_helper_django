@@ -2,6 +2,7 @@ import datetime
 
 from django.test import TestCase, RequestFactory
 from django.urls import reverse
+from django.http import HttpResponse
 from django.contrib.auth.models import User
 from django.contrib.admin.models import LogEntry, CHANGE
 from django.contrib.admin import AdminSite
@@ -11,13 +12,14 @@ from unittest.mock import Mock
 
 from .models import Booking, CancelledBooking
 from .admin import BookingAdmin, CancelledBookingAdmin
+from .views import student_reports
+
+class ViewTests(TestCase):
+    def test_student_reports(self):
+        self.assertTrue(isinstance(student_reports(RequestFactory().get('/')), HttpResponse))
 
 class CancelledBookingTests(TestCase):
     def test_deleting_booking(self):
-        """
-        was_published_recently() returns False for questions whose pub_date
-        is in the future.
-        """
         b = Booking(spot_start=1, spot_end=2)
         #b.delete()
 
