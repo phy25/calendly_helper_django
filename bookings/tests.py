@@ -80,7 +80,7 @@ class BookingAdminTests(TestCase):
         queryset = Booking.objects.all()
         all_count = queryset.count()
         ma = BookingAdmin(Booking, self.site)
-        ma.approve_and_protect(request, queryset)
+        ma.decline_and_protect(request, queryset)
         self.assertEqual(Booking.objects.filter(approval_status=Booking.APPROVAL_STATUS_DECLINED).count(), all_count)
         self.assertEqual(Booking.objects.filter(approval_protected=True).count(), all_count)
 
