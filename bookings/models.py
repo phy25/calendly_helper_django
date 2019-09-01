@@ -34,15 +34,10 @@ class BookingSoftDeletionQuerySet(models.QuerySet):
         return self.exclude(cancelled_at=None)
 
 
-class AbsBookingModel(models.Model):
-    objects = BookingSoftDeletionManager()
-    all_objects = BookingSoftDeletionManager(active_only=False)
+class Booking(models.Model):
+    objects = BookingSoftDeletionManager.from_queryset(BookingSoftDeletionQuerySet)()
+    all_objects = BookingSoftDeletionManager.from_queryset(BookingSoftDeletionQuerySet)(active_only=False)
 
-    class Meta:
-        abstract = True
-
-
-class Booking(AbsBookingModel):
     event_type_id = models.CharField(max_length=32, default='', db_index=True)
     email = models.EmailField(null=False, blank=True)
     spot_start = models.DateTimeField()
