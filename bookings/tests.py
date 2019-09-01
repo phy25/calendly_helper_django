@@ -1,6 +1,6 @@
 import datetime
 
-from django.test import TestCase, RequestFactory
+from django.test import TestCase, RequestFactory, Client
 from django.urls import reverse
 from django.http import HttpResponse
 from django.contrib.auth.models import User
@@ -15,8 +15,16 @@ from .admin import BookingAdmin, CancelledBookingAdmin
 from .views import student_reports
 
 class ViewTests(TestCase):
+    def setUp(self):
+        self.client = Client()
+
     def test_student_reports(self):
         self.assertTrue(isinstance(student_reports(RequestFactory().get('/')), HttpResponse))
+
+    def test_ping(self):
+        response = self.client.get(reverse('ping'))
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.content, 'pong')
 
 class BookingTests(TestCase):
     def setUp(self):
