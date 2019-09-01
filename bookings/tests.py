@@ -71,7 +71,7 @@ class BookingAdminTests(TestCase):
         ).count(), all_count)
 
     def test_admin_actions_fail(self):
-        methods = []
+        methods = ['approve_and_protect', 'decline_and_protect', 'reset_approval']
         for func_name in methods:
             request = self.factory.post(reverse('admin:bookings_booking_changelist'))
             request.user = self.user
