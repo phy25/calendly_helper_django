@@ -3,6 +3,7 @@ from django.urls import reverse
 from django.contrib.auth.models import User
 from django.utils.dateparse import parse_datetime
 from django.contrib.admin.models import LogEntry
+from django.contrib.admin import ModelAdmin, AdminSite
 from constance import config
 from unittest.mock import Mock
 
@@ -531,15 +532,19 @@ class AdminDecoratorTests(TestCase):
                 approval_status=Booking.APPROVAL_STATUS_DECLINED,
             ),
         )
+        self.site = AdminSite()
 
     def test_admin_link(self):
-        @admin_link('booking', 'Booking')
-        def booking_email(bc, booking):
-            return booking.email
+        class TestBookingAdmin(ModelAdmin):
+            @admin_link('booking', 'Booking')
+            def booking_email(bc, booking):
+                return booking.email
 
-        html = booking_email(self.bc, self.bc.booking)
+        ma = TestBookingAdmin(Booking, self.site)
+        html = ma.booking_email(self.bc)
+
         self.assertTrue('<a href="' in html)
         self.assertTrue('a@localhost' in html)
         self.assertTrue(reverse('admin:bookings_booking_change', args=(self.bc.booking.pk,)) in html)
-        self.assertEqual(booking_email.short_description, 'Booking')
-        self.assertEqual(booking_email.allow_tags, True)
+        self.assertEqual(ma.booking_email.short_description, 'Booking')
+        self.assertEqual(ma.booking_email.allow_tags, True)
