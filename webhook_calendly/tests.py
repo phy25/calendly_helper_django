@@ -81,7 +81,7 @@ class StudentViewTests(TestCase):
 
 class ApprovalTests(TestCase):
     def setUp(self):
-        user = User.create_superuser('approval', 'approval@localhost', 'approval')
+        user = User.objects.create_superuser('approval', 'approval@localhost', 'approval')
         config.APPROVAL_USER_ID = user.pk
 
         ag1 = ApprovalGroup.objects.create(name="Group 1", approval_type=ApprovalGroup.APPROVAL_TYPE_FIRST_BOOKED)
