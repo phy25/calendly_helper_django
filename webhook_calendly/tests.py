@@ -81,6 +81,9 @@ class StudentViewTests(TestCase):
 
 class ApprovalTests(TestCase):
     def setUp(self):
+        user = User.create_superuser('approval', 'approval@localhost', 'approval')
+        config.APPROVAL_USER_ID = user.pk
+
         ag1 = ApprovalGroup.objects.create(name="Group 1", approval_type=ApprovalGroup.APPROVAL_TYPE_FIRST_BOOKED)
         ag2 = ApprovalGroup.objects.create(name="Group 2")
 
@@ -289,7 +292,44 @@ class ApprovalTests(TestCase):
 
     def test_execute_approval_meta(self):
         "approval_group, approval_status (approved/declined) and log_action, returns changed"
+        ag = ApprovalGroup.objects.get(name="Group 1")
+        Invitee.objects.create(email="aa@localhost", group=ag)
 
+        bc2 = BookingCalendlyData.objects.create(
+            calendly_uuid="5",
+            booking=Booking.objects.create(
+                email="a@localhost",
+                event_type_id="2",
+                spot_start="2019-01-01 15:40:00-0400",
+                spot_end="2019-01-01 15:50:00-0400",
+                approval_status=Booking.APPROVAL_STATUS_NEW,
+            ),
+        )
+
+        bc3 = BookingCalendlyData.objects.create(
+            calendly_uuid="6",
+            booking=Booking.objects.create(
+                email="aa@localhost",
+                event_type_id="2",
+                spot_start="2019-01-01 10:00:00-0400",
+                spot_end="2019-01-01 10:10:00-0400",
+                approval_status=Booking.APPROVAL_STATUS_NEW,
+            ),
+        )
+
+        changed = ag.execute_approval([bc2.booking], [bc3.booking])
+
+        bc2.refresh_from_db()
+        bc3.refresh_from_db()
+        self.assertEqual(bc2.booking.approval_status, Booking.APPROVAL_STATUS_APPROVED)
+        self.assertEqual(bc3.booking.approval_status, Booking.APPROVAL_STATUS_DECLINED)
+        self.assertEqual(bc2.approval_group, ag)
+        self.assertEqual(bc3.approval_group, ag)
+        self.assertEqual(changed[0].approval_status, Booking.APPROVAL_STATUS_APPROVED)
+        self.assertEqual(changed[1].approval_status, Booking.APPROVAL_STATUS_DECLINED)
+        self.assertEqual(changed[0].calendly_data.approval_group, ag)
+        self.assertEqual(changed[1].calendly_data.approval_group, ag)
+        self.assertEqual(LogEntry.objects.all().count(), 2)
 
     def test_execute_approval_protected(self):
         "protected is not touched, returns correct result"
