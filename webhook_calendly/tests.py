@@ -250,8 +250,7 @@ class ApprovalTests(TestCase):
         self.assertEqual(len(bookings_approved), 0)
         self.assertEqual(len(bookings_declined), 3)
 
-    def test_execute_approval_fake(self):
-        "Make sure fake does not change anything and returns the correct result"
+    def _execute_approval_init(self):
         ag = ApprovalGroup.objects.get(name="Group 1")
         Invitee.objects.create(email="aa@localhost", group=ag)
 
@@ -276,8 +275,11 @@ class ApprovalTests(TestCase):
                 approval_status=Booking.APPROVAL_STATUS_NEW,
             ),
         )
+        return ag, bc2, bc3
 
-        changed = ag.execute_approval([bc2.booking], [bc3.booking], fake=True)
+    def _test_execute_approval_meta(self, var, fake):
+        ag, bc2, bc3 = var
+        changed = ag.execute_approval([bc2.booking], [bc3.booking], fake=fake)
         self.assertEqual(changed[0].approval_status, Booking.APPROVAL_STATUS_APPROVED)
         self.assertEqual(changed[1].approval_status, Booking.APPROVAL_STATUS_DECLINED)
         self.assertEqual(changed[0].calendly_data.approval_group, ag)
@@ -285,54 +287,59 @@ class ApprovalTests(TestCase):
 
         bc2.refresh_from_db()
         bc3.refresh_from_db()
+        if fake:
+            self.assertEqual(bc2.booking.approval_status, Booking.APPROVAL_STATUS_NEW)
+            self.assertEqual(bc3.booking.approval_status, Booking.APPROVAL_STATUS_NEW)
+            self.assertEqual(bc2.approval_group, None)
+            self.assertEqual(bc3.approval_group, None)
+            self.assertEqual(LogEntry.objects.all().count(), 0)
+        else:
+            self.assertEqual(bc2.booking.approval_status, Booking.APPROVAL_STATUS_APPROVED)
+            self.assertEqual(bc3.booking.approval_status, Booking.APPROVAL_STATUS_DECLINED)
+            self.assertEqual(bc2.approval_group, ag)
+            self.assertEqual(bc3.approval_group, ag)
+            self.assertEqual(LogEntry.objects.all().count(), 2)
+
+    def test_execute_approval_meta(self):
+        "approval_group, approval_status (approved/declined) and log_action, returns changed"
+        ag, bc2, bc3 = self._execute_approval_init()
+        self._test_execute_approval_meta(var=(ag, bc2, bc3, ), fake=False)
+
+    def test_execute_approval_fake(self):
+        "make sure fake does not change anything and returns the correct result"
+        ag, bc2, bc3 = self._execute_approval_init()
+        self._test_execute_approval_meta(var=(ag, bc2, bc3, ), fake=True)
+
+    def _test_execute_approval_protected(self, var, fake):
+        ag, bc2, bc3 = var
+        changed = ag.execute_approval([bc2.booking], [bc3.booking], fake=fake)
+        self.assertEqual(changed[0].approval_status, Booking.APPROVAL_STATUS_NEW)
+        self.assertEqual(changed[1].approval_status, Booking.APPROVAL_STATUS_NEW)
+        self.assertEqual(changed[0].calendly_data.approval_group, None)
+        self.assertEqual(changed[1].calendly_data.approval_group, None)
+
+        bc2.refresh_from_db()
+        bc3.refresh_from_db()
+
         self.assertEqual(bc2.booking.approval_status, Booking.APPROVAL_STATUS_NEW)
         self.assertEqual(bc3.booking.approval_status, Booking.APPROVAL_STATUS_NEW)
         self.assertEqual(bc2.approval_group, None)
         self.assertEqual(bc3.approval_group, None)
-
-    def test_execute_approval_meta(self):
-        "approval_group, approval_status (approved/declined) and log_action, returns changed"
-        ag = ApprovalGroup.objects.get(name="Group 1")
-        Invitee.objects.create(email="aa@localhost", group=ag)
-
-        bc2 = BookingCalendlyData.objects.create(
-            calendly_uuid="5",
-            booking=Booking.objects.create(
-                email="a@localhost",
-                event_type_id="2",
-                spot_start="2019-01-01 15:40:00-0400",
-                spot_end="2019-01-01 15:50:00-0400",
-                approval_status=Booking.APPROVAL_STATUS_NEW,
-            ),
-        )
-
-        bc3 = BookingCalendlyData.objects.create(
-            calendly_uuid="6",
-            booking=Booking.objects.create(
-                email="aa@localhost",
-                event_type_id="2",
-                spot_start="2019-01-01 10:00:00-0400",
-                spot_end="2019-01-01 10:10:00-0400",
-                approval_status=Booking.APPROVAL_STATUS_NEW,
-            ),
-        )
-
-        changed = ag.execute_approval([bc2.booking], [bc3.booking])
-
-        bc2.refresh_from_db()
-        bc3.refresh_from_db()
-        self.assertEqual(bc2.booking.approval_status, Booking.APPROVAL_STATUS_APPROVED)
-        self.assertEqual(bc3.booking.approval_status, Booking.APPROVAL_STATUS_DECLINED)
-        self.assertEqual(bc2.approval_group, ag)
-        self.assertEqual(bc3.approval_group, ag)
-        self.assertEqual(changed[0].approval_status, Booking.APPROVAL_STATUS_APPROVED)
-        self.assertEqual(changed[1].approval_status, Booking.APPROVAL_STATUS_DECLINED)
-        self.assertEqual(changed[0].calendly_data.approval_group, ag)
-        self.assertEqual(changed[1].calendly_data.approval_group, ag)
-        self.assertEqual(LogEntry.objects.all().count(), 2)
+        self.assertEqual(LogEntry.objects.all().count(), 0)
 
     def test_execute_approval_protected(self):
-        "protected is not touched, returns correct result"
+        "protected is not touched, and returns correct result"
+        ag, bc2, bc3 = self._execute_approval_init()
+        bc2.booking.approval_protected = True
+        bc3.booking.approval_protected = True
+        self._test_execute_approval_protected(var=(ag, bc2, bc3, ), fake=False)
+
+    def test_execute_approval_protected_fake(self):
+        "protected is not touched, and returns correct result, in fake"
+        ag, bc2, bc3 = self._execute_approval_init()
+        bc2.booking.approval_protected = True
+        bc3.booking.approval_protected = True
+        self._test_execute_approval_protected(var=(ag, bc2, bc3, ), fake=True)
 
     def test_bc_run_approval_noemail(self):
         "noemail should be untouched"
