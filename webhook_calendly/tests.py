@@ -80,8 +80,8 @@ class StudentViewTests(TestCase):
 
 class ApprovalTests(TestCase):
     def setUp(self):
-        ag1 = ApprovalGroup.objects.create(name="Group 1")
-        ag2 = ApprovalGroup.objects.create(name="Group 2", approval_type=ApprovalGroup.APPROVAL_TYPE_FIRST_BOOKED)
+        ag1 = ApprovalGroup.objects.create(name="Group 1", approval_type=ApprovalGroup.APPROVAL_TYPE_FIRST_BOOKED)
+        ag2 = ApprovalGroup.objects.create(name="Group 2")
 
         Invitee.objects.create(email="a@localhost", group=ag1)
         Invitee.objects.create(email="b@localhost", group=ag2)
@@ -137,22 +137,24 @@ class ApprovalTests(TestCase):
 
     def tests_update_approval_groups(self):
         'Protected booking still needs to be updated'
-        email = "b@localhost"
+        email = "a@localhost"
         qs = Booking.objects.filter(email=email)
-        ag2 = Invitee.objects.get(email=email).group
-        ag2.update_approval_groups(qs)
+        # This should not include deleted ones
+        ag = Invitee.objects.get(email=email).group
+        ag.update_approval_groups(qs)
 
-        self.assertEqual(Booking.objects.filter(email=email, calendly_data__approval_group=ag2).count(), 2)
+        self.assertEqual(Booking.objects.filter(email=email, calendly_data__approval_group=ag).count(), 2)
 
     def tests_update_manual_approval_groups(self):
         'Protected booking with manual approval group still needs to be updated'
-        email = "b@localhost"
+        email = "a@localhost"
         qs = Booking.objects.filter(email=email)
-        ag2 = Invitee.objects.get(email=email).group
-        ag2.approval_type = ApprovalGroup.APPROVAL_TYPE_MANUAL
-        ag2.update_approval_groups(qs)
+        # This should not include deleted ones
+        ag = Invitee.objects.get(email=email).group
+        ag.approval_type = ApprovalGroup.APPROVAL_TYPE_MANUAL
+        ag.update_approval_groups(qs)
 
-        self.assertEqual(Booking.objects.filter(email=email, calendly_data__approval_group=ag2).count(), 2)
+        self.assertEqual(Booking.objects.filter(email=email, calendly_data__approval_group=ag).count(), 2)
 
 class HookAdminTests(TestCase):
     def setUp(self):
