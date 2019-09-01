@@ -78,7 +78,83 @@ class StudentViewTests(TestCase):
         self.assertEqual(len(response.context['groups_list']), 1)
         self.assertEqual(response.context['declined_bookings_count'], 0)
 
-class HookAdminTest(TestCase):
+class ApprovalTests(TestCase):
+    def setUp(self):
+        ag1 = ApprovalGroup.objects.create(name="Group 1")
+        ag2 = ApprovalGroup.objects.create(name="Group 2", approval_type=ApprovalGroup.APPROVAL_TYPE_FIRST_BOOKED)
+
+        Invitee.objects.create(email="a@localhost", group=ag1)
+        Invitee.objects.create(email="b@localhost", group=ag2)
+
+        b = Booking.objects.create(
+            event_type_id="1",
+            email="a@localhost",
+            spot_start="2019-01-01 14:30:00-0400",
+            spot_end="2019-01-01 14:40:00-0400",
+            approval_status=Booking.APPROVAL_STATUS_DECLINED,
+        )
+        BookingCalendlyData.objects.create(
+            calendly_uuid="1",
+            booking=b,
+        )
+        b.delete()
+        # cancelled items should not be included
+
+        BookingCalendlyData.objects.create(
+            calendly_uuid="2",
+            booking=Booking.objects.create(
+                email="a@localhost",
+                event_type_id="2",
+                spot_start="2019-01-01 14:40:00-0400",
+                spot_end="2019-01-01 14:50:00-0400",
+                approval_status=Booking.APPROVAL_STATUS_DECLINED,
+            ),
+        )
+        # non_latest item will be omitted
+
+        BookingCalendlyData.objects.create(
+            calendly_uuid="3",
+            booking=Booking.objects.create(
+                email="a@localhost",
+                event_type_id="1",
+                spot_start="2019-01-01 14:50:00-0400",
+                spot_end="2019-01-01 15:00:00-0400",
+                approval_status=Booking.APPROVAL_STATUS_DECLINED,
+                approval_protected=True,
+            ),
+        )
+
+        BookingCalendlyData.objects.create(
+            calendly_uuid="4",
+            booking=Booking.objects.create(
+                email="b@localhost",
+                event_type_id="1",
+                spot_start="2019-01-01 15:00:00-0400",
+                spot_end="2019-01-01 15:10:00-0400",
+                approval_status=Booking.APPROVAL_STATUS_APPROVED,
+            ),
+        )
+
+    def tests_update_approval_groups(self):
+        'Protected booking still needs to be updated'
+        email = "b@localhost"
+        qs = Booking.objects.filter(email=email)
+        ag2 = Invitee.objects.get(email=email).group
+        ag2.update_approval_groups(qs)
+
+        self.assertEqual(Booking.objects.filter(email=email, bookingcalendlydata_set__approval_group=ag2).count(), 2)
+
+    def tests_update_manual_approval_groups(self):
+        'Protected booking with manual approval group still needs to be updated'
+        email = "b@localhost"
+        qs = Booking.objects.filter(email=email)
+        ag2 = Invitee.objects.get(email=email).group
+        ag2.approval_type = ApprovalGroup.APPROVAL_TYPE_MANUAL
+        ag2.update_approval_groups(qs)
+
+        self.assertEqual(Booking.objects.filter(email=email, bookingcalendlydata_set__approval_group=ag2).count(), 2)
+
+class HookAdminTests(TestCase):
     def setUp(self):
         self.client = Client()
         self.user = User.objects.create_superuser("test", "test@localhost", "test")
@@ -94,7 +170,7 @@ class HookAdminTest(TestCase):
         self.assertEqual(response.status_code, 400) # No token has been set up yet
         self.assertTrue(reverse('list_hooks') in response.redirect_chain[0][0])
 
-class HookPostTest(TestCase):
+class HookPostTests(TestCase):
     json_create = '{"event":"invitee.created","time":"2018-03-14T19:16:01Z","payload":{"event_type":{"uuid":"CCCCCCCCCCCCCCCC","kind":"One-on-One","slug":"event_type_name","name":"Event Type Name","duration":15,"owner":{"type":"users","uuid":"DDDDDDDDDDDDDDDD"}},"event":{"uuid":"BBBBBBBBBBBBBBBB","assigned_to":["Jane Sample Data"],"extended_assigned_to":[{"name":"Jane Sample Data","email":"user@example.com","primary":false}],"start_time":"2018-03-14T12:00:00Z","start_time_pretty":"12:00pm - Wednesday, March 14, 2018","invitee_start_time":"2018-03-14T12:00:00Z","invitee_start_time_pretty":"12:00pm - Wednesday, March 14, 2018","end_time":"2018-03-14T12:15:00Z","end_time_pretty":"12:15pm - Wednesday, March 14, 2018","invitee_end_time":"2018-03-14T12:15:00Z","invitee_end_time_pretty":"12:15pm - Wednesday, March 14, 2018","created_at":"2018-03-14T00:00:00Z","location":"The Coffee Shop","canceled":false,"canceler_name":null,"cancel_reason":null,"canceled_at":null},"invitee":{"uuid":"AAAAAAAAAAAAAAAA","first_name":"Joe","last_name":"Sample Data","name":"Joe Sample Data","email":"not.a.real.email@example.com","text_reminder_number":"+14045551234","timezone":"UTC","created_at":"2018-03-14T00:00:00Z","is_reschedule":false,"payments":[{"id":"ch_AAAAAAAAAAAAAAAAAAAAAAAA","provider":"stripe","amount":1234.56,"currency":"USD","terms":"sample terms of payment (up to 1,024 characters)","successful":true}],"canceled":false,"canceler_name":null,"cancel_reason":null,"canceled_at":null},"questions_and_answers":[{"question":"Skype ID","answer":"fake_skype_id"},{"question":"Facebook ID","answer":"fake_facebook_id"},{"question":"Twitter ID","answer":"fake_twitter_id"},{"question":"Google ID","answer":"fake_google_id"}],"questions_and_responses":{"1_question":"Skype ID","1_response":"fake_skype_id","2_question":"Facebook ID","2_response":"fake_facebook_id","3_question":"Twitter ID","3_response":"fake_twitter_id","4_question":"Google ID","4_response":"fake_google_id"},"tracking":{"utm_campaign":null,"utm_source":null,"utm_medium":null,"utm_content":null,"utm_term":null,"salesforce_uuid":null},"old_event":null,"old_invitee":null,"new_event":null,"new_invitee":null}}'
     json_cancel = '{"event":"invitee.canceled","time":"2018-03-14T19:16:01Z","payload":{"event_type":{"uuid":"ZZZZZZZZZZZZZZZZ","kind":"One-on-One","slug":"event_type_name","name":"Event Type Name","duration":15,"owner":{"type":"users","uuid":"DDDDDDDDDDDDDDDD"}},"event":{"uuid":"BBBBBBBBBBBBBBBB","assigned_to":["Jane Sample Data"],"extended_assigned_to":[{"name":"Jane Sample Data","email":"user@example.com","primary":false}],"start_time":"2018-03-14T12:00:00Z","start_time_pretty":"12:00pm - Wednesday, March 14, 2018","invitee_start_time":"2018-03-14T12:00:00Z","invitee_start_time_pretty":"12:00pm - Wednesday, March 14, 2018","end_time":"2018-03-14T12:15:00Z","end_time_pretty":"12:15pm - Wednesday, March 14, 2018","invitee_end_time":"2018-03-14T12:15:00Z","invitee_end_time_pretty":"12:15pm - Wednesday, March 14, 2018","created_at":"2018-03-14T00:00:00Z","location":"The Coffee Shop","canceled":true,"canceler_name":"Joe Sample Data","cancel_reason":"This was not a real meeting.","canceled_at":"2018-03-14T00:00:00Z"},"invitee":{"uuid":"AAAAAAAAAAAAAAAA","first_name":"Joe","last_name":"Sample Data","name":"Joe Sample Data","email":"not.a.real.email@example.com","text_reminder_number":"+14045551234","timezone":"UTC","created_at":"2018-03-14T00:00:00Z","is_reschedule":false,"payments":[{"id":"ch_AAAAAAAAAAAAAAAAAAAAAAAA","provider":"stripe","amount":1234.56,"currency":"USD","terms":"sample terms of payment (up to 1,024 characters)","successful":true}],"canceled":true,"canceler_name":"Joe Sample Data","cancel_reason":"This was not a real meeting.","canceled_at":"2018-03-14T00:00:00Z"},"questions_and_answers":[{"question":"Skype ID","answer":"fake_skype_id"},{"question":"Facebook ID","answer":"fake_facebook_id"},{"question":"Twitter ID","answer":"fake_twitter_id"},{"question":"Google ID","answer":"fake_google_id"}],"questions_and_responses":{"1_question":"Skype ID","1_response":"fake_skype_id","2_question":"Facebook ID","2_response":"fake_facebook_id","3_question":"Twitter ID","3_response":"fake_twitter_id","4_question":"Google ID","4_response":"fake_google_id"},"tracking":{"utm_campaign":null,"utm_source":null,"utm_medium":null,"utm_content":null,"utm_term":null,"salesforce_uuid":null},"old_event":null,"old_invitee":null,"new_event":null,"new_invitee":null}}'
     json_bad = '{"event":"invitee.created","time":"2018-03-14T19:16:01Z","payload":{"event":{"uuid":"BBBBBBBBBBBBBBBB","assigned_to":["Jane Sample Data"],"extended_assigned_to":[{"name":"Jane Sample Data","email":"user@example.com","primary":false}],"start_time":"2018-03-14T12:00:00Z","start_time_pretty":"12:00pm - Wednesday, March 14, 2018","invitee_start_time":"2018-03-14T12:00:00Z","invitee_start_time_pretty":"12:00pm - Wednesday, March 14, 2018","end_time":"2018-03-14T12:15:00Z","end_time_pretty":"12:15pm - Wednesday, March 14, 2018","invitee_end_time":"2018-03-14T12:15:00Z","invitee_end_time_pretty":"12:15pm - Wednesday, March 14, 2018","created_at":"2018-03-14T00:00:00Z","location":"The Coffee Shop","canceled":false,"canceler_name":null,"cancel_reason":null,"canceled_at":null},"invitee":{"uuid":"AAAAAAAAAAAAAAAA","first_name":"Joe","last_name":"Sample Data","name":"Joe Sample Data","email":"not.a.real.email@example.com","text_reminder_number":"+14045551234","timezone":"UTC","created_at":"2018-03-14T00:00:00Z","is_reschedule":false,"payments":[{"id":"ch_AAAAAAAAAAAAAAAAAAAAAAAA","provider":"stripe","amount":1234.56,"currency":"USD","terms":"sample terms of payment (up to 1,024 characters)","successful":true}],"canceled":false,"canceler_name":null,"cancel_reason":null,"canceled_at":null},"questions_and_answers":[{"question":"Skype ID","answer":"fake_skype_id"},{"question":"Facebook ID","answer":"fake_facebook_id"},{"question":"Twitter ID","answer":"fake_twitter_id"},{"question":"Google ID","answer":"fake_google_id"}],"questions_and_responses":{"1_question":"Skype ID","1_response":"fake_skype_id","2_question":"Facebook ID","2_response":"fake_facebook_id","3_question":"Twitter ID","3_response":"fake_twitter_id","4_question":"Google ID","4_response":"fake_google_id"},"tracking":{"utm_campaign":null,"utm_source":null,"utm_medium":null,"utm_content":null,"utm_term":null,"salesforce_uuid":null},"old_event":null,"old_invitee":null,"new_event":null,"new_invitee":null}}'
