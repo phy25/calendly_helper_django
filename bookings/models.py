@@ -31,7 +31,7 @@ class BookingSoftDeletionQuerySet(models.QuerySet):
         return self.filter(cancelled_at=None)
 
     def cancelled(self):
-        return self.exclude(cancelled_at=None)
+        return self.filter(~models.Q(cancelled_at=None))
 
 
 class Booking(models.Model):

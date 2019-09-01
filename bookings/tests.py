@@ -40,7 +40,7 @@ class BookingTests(TestCase):
             spot_start="2019-01-01 14:50:00-0400",
             spot_end="2019-01-01 15:00:00-0400",
             approval_status=Booking.APPROVAL_STATUS_APPROVED,
-            approval_protected=True
+            approval_protected=True,
         )
 
     def test_queryset_with_delete(self):
