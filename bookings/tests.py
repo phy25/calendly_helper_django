@@ -6,6 +6,7 @@ from django.contrib.auth.models import User
 from django.contrib.admin.models import LogEntry, CHANGE
 from django.contrib.admin import AdminSite
 from django.contrib.messages.storage.fallback import FallbackStorage
+from django.contrib.messages import get_messages
 from unittest.mock import Mock
 
 from .models import Booking, CancelledBooking
@@ -71,6 +72,9 @@ class BookingAdminTests(TestCase):
         ).count(), all_count)
 
     def test_admin_actions_fail(self):
+        def _message_user(request, message, *args, **kwargs):
+            request._test_message = message
+
         methods = ['approve_and_protect', 'decline_and_protect', 'reset_approval']
         for func_name in methods:
             request = self.factory.post(reverse('admin:bookings_booking_changelist'))
@@ -80,10 +84,11 @@ class BookingAdminTests(TestCase):
             queryset = Mock()
             queryset.update = Mock(side_effect=Exception('Boom!'))
             ma = BookingAdmin(Booking, self.site)
+            ma.message_user = _message_user
             func = getattr(ma, func_name)
             func(request, queryset)
-            print(request._messages)
-            self.assertEqual(1, 1, "{} does not include exception message".format(func_name))
+
+            self.assertTrue('Boom!' in request._test_message, "{} does not include exception message".format(func_name))
 
     def test_decline_and_protect(self):
         self.assertEqual(Booking.objects.filter(approval_status=Booking.APPROVAL_STATUS_DECLINED).count(), 1)
