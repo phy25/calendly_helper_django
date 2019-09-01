@@ -6,6 +6,7 @@ from django.contrib.admin.models import LogEntry
 from constance import config
 
 from bookings.models import Booking
+from ..views.hooksmgr import get_hook_url
 import json
 
 
@@ -24,6 +25,11 @@ class HookAdminTests(TestCase):
 
         self.assertEqual(response.status_code, 400) # No token has been set up yet
         self.assertTrue(reverse('list_hooks') in response.redirect_chain[0][0])
+
+    def test_get_hook_url(self):
+        url = get_hook_url()
+        self.assertTrue(config.WEBHOOK_TOKEN in url)
+        self.assertTrue('://' in url) # Absolute URL
 
 
 class HookPostTests(TestCase):
