@@ -109,10 +109,9 @@ def student_reports(request: HttpRequest):
 
 @staff_member_required
 def admin_reports(request: HttpRequest):
+    event_type_id = get_default_event_type_id()
     if 'event_type_id' in request.GET:
         event_type_id = request.GET['event_type_id']
-    else:
-        event_type_id = get_default_event_type_id()
 
     event_type_ids = Booking.objects.order_by().values('event_type_id').annotate(total=Count('id'))
     event_type_ids_choices = [
@@ -125,7 +124,7 @@ def admin_reports(request: HttpRequest):
     class EventTypeIdForm(forms.Form):
         event_type_id = forms.ChoiceField(label='Event Type', choices=event_type_ids_choices)
 
-    form = EventTypeIdForm(request.GET if 'event_type_id' in request.GET else None)
+    form = EventTypeIdForm(initial={'event_type_id': event_type_id})
 
     if event_type_id:
         groups_list, bookings_list = generate_student_reports_list(event_type_id)
