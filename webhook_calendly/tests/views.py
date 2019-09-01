@@ -60,16 +60,27 @@ class StudentViewTests(TestCase):
             ),
         )
 
-    def test_declinedcount(self):
+    def test_declined_count(self):
         config.SHOW_DECLINED_COUNT_FRONTEND = True
         response = self.client.get(reverse('student_reports'))
         self.assertEqual(response.status_code, 200)
         self.assertEqual(len(response.context['groups_list']), 1)
         self.assertEqual(response.context['declined_bookings_count'], 1)
 
-    def test_hidedeclinedcount(self):
+    def test_hide_declined_count(self):
         config.SHOW_DECLINED_COUNT_FRONTEND = False
         response = self.client.get(reverse('student_reports'))
         self.assertEqual(response.status_code, 200)
         self.assertEqual(len(response.context['groups_list']), 1)
         self.assertEqual(response.context['declined_bookings_count'], 0)
+
+    def test_default_event_type_id(self):
+        config.DEFAULT_EVENT_TYPE_ID = "2"
+        response = self.client.get(reverse('student_reports'))
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(len(response.context['groups_list']), 0)
+        self.assertEqual(response.context['declined_bookings_count'], 1)
+
+    def test_accept_txt(self):
+        response = self.client.get(reverse('student_reports'), HTTP_ACCEPT='text/plain')
+        self.assertEqual(response.content_type, 'text/plain')
