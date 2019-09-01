@@ -56,7 +56,7 @@ class ApprovalGroup(models.Model):
         return bookings_approved, bookings_declined
 
     def update_approval_groups(self, qs):
-        return qs.update(approval_group=self)
+        return BookingCalendlyData.objects.filter(booking__in=list(qs)).update(approval_group=self)
 
     def execute_approval(self, approved, declined, fake=False):
         content_type_id = ContentType.objects.get_for_model(Booking).pk

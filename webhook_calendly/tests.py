@@ -142,7 +142,7 @@ class ApprovalTests(TestCase):
         ag2 = Invitee.objects.get(email=email).group
         ag2.update_approval_groups(qs)
 
-        self.assertEqual(Booking.objects.filter(email=email, bookingcalendlydata_set__approval_group=ag2).count(), 2)
+        self.assertEqual(Booking.objects.filter(email=email, calendly_data__approval_group=ag2).count(), 2)
 
     def tests_update_manual_approval_groups(self):
         'Protected booking with manual approval group still needs to be updated'
@@ -152,7 +152,7 @@ class ApprovalTests(TestCase):
         ag2.approval_type = ApprovalGroup.APPROVAL_TYPE_MANUAL
         ag2.update_approval_groups(qs)
 
-        self.assertEqual(Booking.objects.filter(email=email, bookingcalendlydata_set__approval_group=ag2).count(), 2)
+        self.assertEqual(Booking.objects.filter(email=email, calendly_data__approval_group=ag2).count(), 2)
 
 class HookAdminTests(TestCase):
     def setUp(self):
