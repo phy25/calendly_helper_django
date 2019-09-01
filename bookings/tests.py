@@ -44,25 +44,28 @@ class BookingTests(TestCase):
         )
 
     def test_queryset_with_delete(self):
-        self.assertEqual(Booking.objects.active().count(), 2)
-        self.assertEqual(Booking.objects.cancelled().count(), 1)
+        self.assertEqual(Booking.objects.count(), 2)
+        self.assertEqual(Booking.objects.cancelled().count(), 0)
+        self.assertEqual(Booking.all_objects.cancelled().count(), 1)
 
         Booking.objects.active().first().delete() # object
-        self.assertEqual(Booking.objects.active().count(), 1)
-        self.assertEqual(Booking.objects.cancelled().count(), 2)
+        self.assertEqual(Booking.all_objects.active().count(), 1)
+        self.assertEqual(Booking.all_objects.cancelled().count(), 2)
 
-        Booking.objects.cancelled().first().update(cancelled_at=None)
-        self.assertEqual(Booking.objects.active().count(), 2)
-        self.assertEqual(Booking.objects.cancelled().count(), 1)
+        b = Booking.all_objects.cancelled().first()
+        b.cancelled_at = None
+        b.save()
+        self.assertEqual(Booking.all_objects.active().count(), 2)
+        self.assertEqual(Booking.all_objects.cancelled().count(), 1)
 
         Booking.objects.active().first().hard_delete() # object
-        self.assertEqual(Booking.objects.active().count(), 1)
-        self.assertEqual(Booking.objects.cancelled().count(), 1)
+        self.assertEqual(Booking.all_objects.active().count(), 1)
+        self.assertEqual(Booking.all_objects.cancelled().count(), 1)
         self.assertEqual(CancelledBooking.objects.all().count(), 1)
 
         CancelledBooking.objects.all().delete()
-        self.assertEqual(Booking.objects.active().count(), 1)
-        self.assertEqual(Booking.objects.cancelled().count(), 0)
+        self.assertEqual(Booking.all_objects.active().count(), 1)
+        self.assertEqual(Booking.all_objects.cancelled().count(), 0)
 
     def test_cancelled_is_proxy(self):
         self.assertEqual(CancelledBooking._meta.proxy, True)
