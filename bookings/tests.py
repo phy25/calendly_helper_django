@@ -18,12 +18,53 @@ class ViewTests(TestCase):
     def test_student_reports(self):
         self.assertTrue(isinstance(student_reports(RequestFactory().get('/')), HttpResponse))
 
-class CancelledBookingTests(TestCase):
-    def test_deleting_booking(self):
-        b = Booking(spot_start=1, spot_end=2)
-        #b.delete()
+class BookingTests(TestCase):
+    def setUp(self):
+        self.user = User.objects.create_superuser(
+            username='test', email='test@localhost', password='test')
+        Booking.objects.create(
+            event_type_id="1",
+            spot_start="2019-01-01 14:30:00-0400",
+            spot_end="2019-01-01 14:40:00-0400",
+            approval_status=Booking.APPROVAL_STATUS_NEW,
+        )
+        Booking.objects.create(
+            event_type_id="2",
+            spot_start="2019-01-01 14:40:00-0400",
+            spot_end="2019-01-01 14:50:00-0400",
+            approval_status=Booking.APPROVAL_STATUS_DECLINED,
+            cancelled_at="2019-01-01 17:10:00-0400",
+        )
+        Booking.objects.create(
+            event_type_id="2",
+            spot_start="2019-01-01 14:50:00-0400",
+            spot_end="2019-01-01 15:00:00-0400",
+            approval_status=Booking.APPROVAL_STATUS_APPROVED,
+            approval_protected=True
+        )
 
-    def test_is_proxy(self):
+    def test_queryset_with_delete(self):
+        self.assertEqual(Booking.objects.active().count(), 2)
+        self.assertEqual(Booking.objects.cancelled().count(), 1)
+
+        Booking.objects.active().first().delete() # object
+        self.assertEqual(Booking.objects.active().count(), 1)
+        self.assertEqual(Booking.objects.cancelled().count(), 2)
+
+        Booking.objects.cancelled().first().update(cancelled_at=None)
+        self.assertEqual(Booking.objects.active().count(), 2)
+        self.assertEqual(Booking.objects.cancelled().count(), 1)
+
+        Booking.objects.active().first().hard_delete() # object
+        self.assertEqual(Booking.objects.active().count(), 1)
+        self.assertEqual(Booking.objects.cancelled().count(), 1)
+        self.assertEqual(CancelledBooking.objects.all().count(), 1)
+
+        CancelledBooking.objects.all().delete()
+        self.assertEqual(Booking.objects.active().count(), 1)
+        self.assertEqual(Booking.objects.cancelled().count(), 0)
+
+    def test_cancelled_is_proxy(self):
         self.assertEqual(CancelledBooking._meta.proxy, True)
 
 class BookingAdminTests(TestCase):
