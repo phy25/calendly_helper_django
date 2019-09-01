@@ -1,4 +1,5 @@
 from django.test import TestCase, Client
+from django.urls import reverse
 from constance import config
 
 from bookings.models import Booking
@@ -53,12 +54,24 @@ class StudentViewTests(TestCase):
             calendly_uuid="4",
             approval_group=ag,
             booking=Booking.objects.create(
+                event_type_id="2",
+                spot_start="2019-01-01 15:40:00-0400",
+                spot_end="2019-01-01 15:50:00-0400",
+                approval_status=Booking.APPROVAL_STATUS_DECLINED,
+            ),
+        )
+
+        BookingCalendlyData.objects.create(
+            calendly_uuid="5",
+            approval_group=ag,
+            booking=Booking.objects.create(
                 event_type_id="1",
-                spot_start="2019-01-01 15:00:00-0400",
-                spot_end="2019-01-01 15:10:00-0400",
+                spot_start="2019-01-01 16:00:00-0400",
+                spot_end="2019-01-01 16:10:00-0400",
                 approval_status=Booking.APPROVAL_STATUS_APPROVED,
             ),
         )
+
 
     def test_declined_count(self):
         config.SHOW_DECLINED_COUNT_FRONTEND = True
@@ -78,9 +91,9 @@ class StudentViewTests(TestCase):
         config.DEFAULT_EVENT_TYPE_ID = "2"
         response = self.client.get(reverse('student_reports'))
         self.assertEqual(response.status_code, 200)
-        self.assertEqual(len(response.context['groups_list']), 0)
-        self.assertEqual(response.context['declined_bookings_count'], 1)
+        self.assertEqual(len(response.context['groups_list']), 1)
+        self.assertEqual(response.context['declined_bookings_count'], 2)
 
     def test_accept_txt(self):
         response = self.client.get(reverse('student_reports'), HTTP_ACCEPT='text/plain')
-        self.assertEqual(response.content_type, 'text/plain')
+        self.assertEqual(response['CONTENT-TYPE'], 'text/plain')

@@ -27,7 +27,10 @@ def admin_link(attr, short_description, empty_description="-"):
     """
     def wrap(func):
         def field_func(self, obj):
-            related_obj = getattr(obj, attr)
+            try:
+                related_obj = getattr(obj, attr)
+            except getattr(type(obj), attr).RelatedObjectDoesNotExist:
+                related_obj = None
             if related_obj is None:
                 return empty_description
             url = admin_change_url(related_obj)

@@ -1,5 +1,6 @@
 from django.test import TestCase
 from django.contrib.auth.models import User
+from django.contrib.admin.models import LogEntry
 from constance import config
 
 from bookings.models import Booking

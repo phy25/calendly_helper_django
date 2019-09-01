@@ -1,4 +1,4 @@
-from django.test import TestCase, Client
+from django.test import TestCase, Client, RequestFactory
 from django.urls import reverse
 from django.contrib.auth.models import User
 from django.utils.dateparse import parse_datetime
@@ -6,13 +6,14 @@ from django.contrib.admin.models import LogEntry
 from constance import config
 
 from bookings.models import Booking
-from ..views.hooksmgr import get_hook_url
+from .views.hooksmgr import get_hook_url
 import json
 
 
 class HookAdminTests(TestCase):
     def setUp(self):
         self.client = Client()
+        self.factory = RequestFactory()
         self.user = User.objects.create_superuser("test", "test@localhost", "test")
 
     def tearDown(self):
@@ -27,7 +28,7 @@ class HookAdminTests(TestCase):
         self.assertTrue(reverse('list_hooks') in response.redirect_chain[0][0])
 
     def test_get_hook_url(self):
-        url = get_hook_url()
+        url = get_hook_url(self.factory.get('/'))
         self.assertTrue(config.WEBHOOK_TOKEN in url)
         self.assertTrue('://' in url) # Absolute URL
 
