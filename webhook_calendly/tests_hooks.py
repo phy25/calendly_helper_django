@@ -4,10 +4,11 @@ from django.contrib.auth.models import User
 from django.utils.dateparse import parse_datetime
 from django.contrib.admin.models import LogEntry
 from django.contrib.admin import ModelAdmin, AdminSite
-from django.http import HttpResponseRedirect, HttpResponseBadRequest
+from django.http import HttpResponse, HttpResponseRedirect, HttpResponseBadRequest
 from constance import config
 from unittest.mock import Mock, patch
 from io import BytesIO
+from urllib.request import HTTPError
 
 from bookings.models import Booking
 from .admin import Hook, HookAdmin
@@ -21,7 +22,15 @@ class HookAdminTests(TestCase):
         self.factory = RequestFactory()
         self.user = User.objects.create_superuser("test", "test@localhost", "test")
 
+        self.get_hooks_byteio = BytesIO(b'{"data":[{"type":"hooks","id":12345,"attributes":{"url":"http://foo.bar/1","created_at":"2016-08-23T19:15:24Z","state":"active","events":["invitee.created","invitee.canceled"]}},{"type":"hooks","id":1234,"attributes":{"url":"http://localhost:8000/calendly/post?token=TOK","created_at":"2016-02-11T19:10:12Z","state":"disabled","events":["invitee.created"]}}]}')
+        config.CALENDLY_WEBHOOK_TOKEN = 'TOK'
+
+    def tearDown(self):
+        self.user.delete()
+        LogEntry.objects.all().delete()
+
     def test_redirect(self):
+        config.CALENDLY_WEBHOOK_TOKEN = None
         self.client.force_login(self.user)
         response = self.client.get(reverse('admin:webhook_calendly_hook_changelist'), follow=True)
 
@@ -45,11 +54,11 @@ class HookAdminTests(TestCase):
 
     def test_get_queryset(self):
         with patch('urllib.request.urlopen') as urlopen:
-            urlopen.return_value = BytesIO(b'{"data":[{"type":"hooks","id":12345,"attributes":{"url":"http://foo.bar/1","created_at":"2016-08-23T19:15:24Z","state":"active","events":["invitee.created","invitee.canceled"]}},{"type":"hooks","id":1234,"attributes":{"url":"http://foo.bar/2","created_at":"2016-02-11T19:10:12Z","state":"disabled","events":["invitee.created"]}}]}')
+            urlopen.return_value = self.get_hooks_byteio
             data = ListHooksView.get_queryset(None)
             self.assertEqual(len(data), 2)
             self.assertEqual(data[0]['attributes']['url'], 'http://foo.bar/1')
-            self.assertEqual(data[1]['attributes']['url'], 'http://foo.bar/2')
+            self.assertEqual(data[1]['attributes']['url'], 'http://localhost:8000/calendly/post?token=TOK')
 
     def test_add_hook(self):
         config.CALENDLY_WEBHOOK_TOKEN = '1'
@@ -63,6 +72,7 @@ class HookAdminTests(TestCase):
             self.assertTrue(isinstance(data, HttpResponseRedirect))
 
     def test_add_hook_notoken(self):
+        config.CALENDLY_WEBHOOK_TOKEN = None
         request = self.factory.post('/')
         request.user = self.user
         response = Mock()
@@ -71,6 +81,19 @@ class HookAdminTests(TestCase):
         with patch('urllib.request.urlopen', return_value=response) as urlopen:
             data = add_hook(request)
             self.assertTrue(isinstance(data, HttpResponseBadRequest))
+
+    def test_add_hook_error(self):
+        config.CALENDLY_WEBHOOK_TOKEN = '1'
+        request = self.factory.post('/')
+        request.user = self.user
+
+        resp = BytesIO(b'')
+        resp.status = 412
+        error = HTTPError('', 412, '', {}, resp)
+        with patch('urllib.request.urlopen', side_effect=error) as urlopen:
+            data = add_hook(request)
+            self.assertTrue(isinstance(data, HttpResponse))
+            self.assertTrue(data.status_code, 412)
 
     def test_remove_hook(self):
         config.CALENDLY_WEBHOOK_TOKEN = '1'
@@ -84,6 +107,7 @@ class HookAdminTests(TestCase):
             self.assertTrue(isinstance(data, HttpResponseRedirect))
 
     def test_remove_hook_notoken(self):
+        config.CALENDLY_WEBHOOK_TOKEN = None
         request = self.factory.post('/')
         request.user = self.user
         response = BytesIO(b'')
