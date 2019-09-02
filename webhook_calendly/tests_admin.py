@@ -7,7 +7,7 @@ from django.contrib.admin import ModelAdmin, AdminSite
 from django.contrib.messages.storage.fallback import FallbackStorage
 from copy import copy
 from constance import config
-from unittest.mock import Mock
+from unittest.mock import Mock, patch
 
 from bookings.models import Booking, CancelledBooking
 from .models import ApprovalGroup, Invitee, BookingCalendlyData
@@ -166,6 +166,11 @@ class CalendlyAdminTests(TestCase):
             func = getattr(ma, func_name)
             func(request, queryset)
             self.assertTrue('Boom!' in request._test_message, "{} does not include exception message".format(func_name))
+
+            with patch(__package__+'.admin.get_default_event_type_id', return_value=None) as urlopen:
+                func = getattr(ma, func_name)
+                func(request, queryset)
+                self.assertTrue('no' in request._test_message, "{} does not include event_type_id message".format(func_name))
 
     def test_group_queryset(self):
         site = AdminSite()

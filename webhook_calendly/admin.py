@@ -160,12 +160,6 @@ class Hook(object):
         abstract = False
         swapped = False
 
-        def get_ordered_objects(self):
-            return False
-
-        def get_change_permission(self):
-            return 'change_%s' % self.model_name
-
         @property
         def app_config(self):
             return apps.get_app_config(self.app_label)
