@@ -11,7 +11,7 @@ from io import BytesIO
 
 from bookings.models import Booking
 from .admin import Hook, HookAdmin
-from .views.hooksmgr import get_hook_url, ListHooksView, add_hook
+from .views.hooksmgr import get_hook_url, ListHooksView, add_hook, remove_hook
 import json
 
 
@@ -51,16 +51,6 @@ class HookAdminTests(TestCase):
             self.assertEqual(data[0]['attributes']['url'], 'http://foo.bar/1')
             self.assertEqual(data[1]['attributes']['url'], 'http://foo.bar/2')
 
-    def test_add_hook_notoken(self):
-        request = self.factory.post('/')
-        request.user = self.user
-        response = Mock()
-        response.status = 404
-
-        with patch('urllib.request.urlopen', return_value=response) as urlopen:
-            data = add_hook(request)
-            self.assertTrue(isinstance(data, HttpResponseBadRequest))
-
     def test_add_hook(self):
         config.CALENDLY_WEBHOOK_TOKEN = '1'
         request = self.factory.post('/')
@@ -71,6 +61,37 @@ class HookAdminTests(TestCase):
         with patch('urllib.request.urlopen', return_value=response) as urlopen:
             data = add_hook(request)
             self.assertTrue(isinstance(data, HttpResponseRedirect))
+
+    def test_add_hook_notoken(self):
+        request = self.factory.post('/')
+        request.user = self.user
+        response = Mock()
+        response.status = 404
+
+        with patch('urllib.request.urlopen', return_value=response) as urlopen:
+            data = add_hook(request)
+            self.assertTrue(isinstance(data, HttpResponseBadRequest))
+
+    def test_remove_hook(self):
+        config.CALENDLY_WEBHOOK_TOKEN = '1'
+        request = self.factory.post('/')
+        request.user = self.user
+        response = BytesIO(b'')
+        response.status = 200
+
+        with patch('urllib.request.urlopen', return_value=response) as urlopen:
+            data = remove_hook(request, 1)
+            self.assertTrue(isinstance(data, HttpResponseRedirect))
+
+    def test_remove_hook_notoken(self):
+        request = self.factory.post('/')
+        request.user = self.user
+        response = BytesIO(b'')
+        response.status = 404
+
+        with patch('urllib.request.urlopen', return_value=response) as urlopen:
+            data = remove_hook(request, 1)
+            self.assertTrue(isinstance(data, HttpResponseBadRequest))
 
 
 class HookPostTests(TestCase):
