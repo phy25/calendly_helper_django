@@ -4,13 +4,14 @@ from django.contrib.auth.models import User
 from django.utils.dateparse import parse_datetime
 from django.contrib.admin.models import LogEntry
 from django.contrib.admin import ModelAdmin, AdminSite
+from django.http import HttpResponseRedirect, HttpResponseBadRequest
 from constance import config
 from unittest.mock import patch
 from io import BytesIO
 
 from bookings.models import Booking
 from .admin import Hook, HookAdmin
-from .views.hooksmgr import get_hook_url, ListHooksView
+from .views.hooksmgr import get_hook_url, ListHooksView, add_hook
 import json
 
 
@@ -49,6 +50,21 @@ class HookAdminTests(TestCase):
             self.assertEqual(len(data), 2)
             self.assertEqual(data[0]['attributes']['url'], 'http://foo.bar/1')
             self.assertEqual(data[1]['attributes']['url'], 'http://foo.bar/2')
+
+    def test_add_hook_notoken(self):
+        request = self.factory.post('/')
+        request.user = self.user
+        with patch('urllib.request.urlopen', return_value={'status':404}) as urlopen:
+            data = add_hook(request)
+            self.assertTrue(isinstance(data, HttpResponseBadRequest))
+
+    def test_add_hook(self):
+        config.CALENDLY_WEBHOOK_TOKEN = '1'
+        request = self.factory.post('/')
+        request.user = self.user
+        with patch('urllib.request.urlopen', return_value={'status':201}) as urlopen:
+            data = add_hook(request)
+            self.assertTrue(isinstance(data, HttpResponseRedirect))
 
 
 class HookPostTests(TestCase):
