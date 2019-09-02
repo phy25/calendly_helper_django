@@ -3,9 +3,11 @@ from django.urls import reverse
 from django.contrib.auth.models import User
 from django.utils.dateparse import parse_datetime
 from django.contrib.admin.models import LogEntry
+from django.contrib.admin import ModelAdmin, AdminSite
 from constance import config
 
 from bookings.models import Booking
+from .admin import Hook, HookAdmin
 from .views.hooksmgr import get_hook_url
 import json
 
@@ -15,10 +17,6 @@ class HookAdminTests(TestCase):
         self.client = Client()
         self.factory = RequestFactory()
         self.user = User.objects.create_superuser("test", "test@localhost", "test")
-
-    def tearDown(self):
-        self.user.delete()
-        LogEntry.objects.all().delete()
 
     def test_redirect(self):
         self.client.force_login(self.user)
@@ -31,6 +29,16 @@ class HookAdminTests(TestCase):
         url = get_hook_url(self.factory.get('/'))
         self.assertTrue(config.WEBHOOK_TOKEN in url)
         self.assertTrue('://' in url) # Absolute URL
+
+    def test_permission(self):
+        site = AdminSite()
+        ma = HookAdmin(Hook, site)
+        request = self.factory.get('/')
+        request.user = self.user
+        self.assertEqual(ma.has_add_permission(request), False)
+        self.assertEqual(ma.has_change_permission(request), False)
+        self.assertEqual(ma.has_view_permission(request), True)
+        self.assertEqual(ma.has_delete_permission(request), True)
 
 
 class HookPostTests(TestCase):
