@@ -67,10 +67,9 @@ class ListHooksView(generic.ListView):
         context['title'] = 'Calendly Hooks'
         context['site_title'] = admin.site.site_title
         context['site_header'] = admin.site.site_header
-        context['has_hook'] = (
-            get_hook_url(self.cached_request) in
-            [i['attributes']['url'] for i in context[self.context_object_name]]
-        )
+        urls = [i['attributes']['url'] for i in context[self.context_object_name]]
+        hook_url = get_hook_url(self.cached_request)
+        context['has_hook'] = (hook_url in urls)
         return context
 
 

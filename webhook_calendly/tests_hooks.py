@@ -23,7 +23,8 @@ class HookAdminTests(TestCase):
         self.user = User.objects.create_superuser("test", "test@localhost", "test")
 
         self.get_hooks_byteio = BytesIO(b'{"data":[{"type":"hooks","id":12345,"attributes":{"url":"http://foo.bar/1","created_at":"2016-08-23T19:15:24Z","state":"active","events":["invitee.created","invitee.canceled"]}},{"type":"hooks","id":1234,"attributes":{"url":"http://localhost:8000/calendly/post?token=TOK","created_at":"2016-02-11T19:10:12Z","state":"disabled","events":["invitee.created"]}}]}')
-        config.CALENDLY_WEBHOOK_TOKEN = 'TOK'
+
+        config.CALENDLY_WEBHOOK_TOKEN = '1'
 
     def tearDown(self):
         self.user.delete()
@@ -60,8 +61,15 @@ class HookAdminTests(TestCase):
             self.assertEqual(data[0]['attributes']['url'], 'http://foo.bar/1')
             self.assertEqual(data[1]['attributes']['url'], 'http://localhost:8000/calendly/post?token=TOK')
 
+    def test_get_hook(self):
+        config.WEBHOOK_TOKEN = 'TOK'
+        with patch('urllib.request.urlopen') as urlopen:
+            urlopen.return_value = self.get_hooks_byteio
+            self.client.force_login(self.user)
+            response = self.client.get(reverse('list_hooks'), HTTP_HOST='localhost:8000')
+            self.assertTrue(response.context['has_hook'])
+
     def test_add_hook(self):
-        config.CALENDLY_WEBHOOK_TOKEN = '1'
         request = self.factory.post('/')
         request.user = self.user
         response = Mock()
@@ -83,7 +91,6 @@ class HookAdminTests(TestCase):
             self.assertTrue(isinstance(data, HttpResponseBadRequest))
 
     def test_add_hook_error(self):
-        config.CALENDLY_WEBHOOK_TOKEN = '1'
         request = self.factory.post('/')
         request.user = self.user
 
@@ -96,7 +103,6 @@ class HookAdminTests(TestCase):
             self.assertTrue(data.status_code, 412)
 
     def test_remove_hook(self):
-        config.CALENDLY_WEBHOOK_TOKEN = '1'
         request = self.factory.post('/')
         request.user = self.user
         response = BytesIO(b'')
@@ -106,7 +112,7 @@ class HookAdminTests(TestCase):
             data = remove_hook(request, 1)
             self.assertTrue(isinstance(data, HttpResponseRedirect))
 
-    def test_remove_hook_notoken(self):
+    def has_hook(self):
         config.CALENDLY_WEBHOOK_TOKEN = None
         request = self.factory.post('/')
         request.user = self.user
