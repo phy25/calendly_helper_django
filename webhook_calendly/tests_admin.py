@@ -9,10 +9,10 @@ from copy import copy
 from constance import config
 from unittest.mock import Mock
 
-from bookings.models import Booking
+from bookings.models import Booking, CancelledBooking
 from .models import ApprovalGroup, Invitee, BookingCalendlyData
 from .admin_decorators import admin_link
-from .admin import GroupAdmin, InviteeAdmin
+from .admin import GroupAdmin, InviteeAdmin, CancelledBookingCalendlyInline
 
 def _message_user(request, message, *args, **kwargs):
     request._test_message = message
@@ -167,12 +167,6 @@ class CalendlyAdminTests(TestCase):
             func(request, queryset)
             self.assertTrue('Boom!' in request._test_message, "{} does not include exception message".format(func_name))
 
-            temp_event_type_id = config.DEFAULT_EVENT_TYPE_ID
-            config.DEFAULT_EVENT_TYPE_ID = 0
-            func(request, queryset)
-            config.DEFAULT_EVENT_TYPE_ID = temp_event_type_id
-            self.assertTrue('no' in request._test_message, "{} does not include event_type_id message".format(func_name))
-
     def test_group_queryset(self):
         site = AdminSite()
         ma = GroupAdmin(ApprovalGroup, site)
@@ -186,3 +180,17 @@ class CalendlyAdminTests(TestCase):
         request = self.factory.get('/')
         request.user = self.user
         self.assertTrue(isinstance(ma.get_queryset(request), QuerySet))
+
+class CancelledBookingCalendlyInlineTests(TestCase):
+    def setUp(self):
+        self.factory = RequestFactory()
+        self.user = User.objects.create_superuser(
+            username='test', email='test@localhost', password='test')
+        self.site = AdminSite()
+
+    def test_permission(self):
+        request = self.factory.post(reverse('admin:bookings_booking_changelist'))
+        request.user = self.user
+        ma = CancelledBookingCalendlyInline(CancelledBooking, self.site)
+        self.assertEqual(ma.has_add_permission(request), False)
+        self.assertEqual(ma.has_change_permission(request), False)
