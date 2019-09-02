@@ -7,6 +7,7 @@ from django.contrib.admin import ModelAdmin, AdminSite
 from django.contrib.messages.storage.fallback import FallbackStorage
 from copy import copy
 from constance import config
+from unittest.mock import Mock
 
 from bookings.models import Booking
 from .models import ApprovalGroup, Invitee, BookingCalendlyData
@@ -149,6 +150,28 @@ class CalendlyAdminTests(TestCase):
             user_id=self.user.id,
             action_flag=CHANGE
         ).count(), 0)
+
+    def test_admin_actions_fail(self):
+        methods = ['execute_approval', 'preview_approval']
+        for func_name in methods:
+            request = self.factory.post("/")
+            request.user = self.user
+            setattr(request, 'session', {})
+            setattr(request, '_messages', FallbackStorage(request))
+            grp = Mock()
+            grp.get_approval_executor = Mock(side_effect=Exception('Boom!'))
+            queryset = [grp]
+            ma = GroupAdmin(ApprovalGroup, self.site)
+            ma.message_user = _message_user
+            func = getattr(ma, func_name)
+            func(request, queryset)
+            self.assertTrue('Boom!' in request._test_message, "{} does not include exception message".format(func_name))
+
+            temp_event_type_id = config.DEFAULT_EVENT_TYPE_ID
+            config.DEFAULT_EVENT_TYPE_ID = 0
+            func(request, queryset)
+            config.DEFAULT_EVENT_TYPE_ID = temp_event_type_id
+            self.assertTrue('no' in request._test_message, "{} does not include event_type_id message".format(func_name))
 
     def test_group_queryset(self):
         site = AdminSite()
