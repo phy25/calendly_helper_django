@@ -112,7 +112,7 @@ class HookAdminTests(TestCase):
             data = remove_hook(request, 1)
             self.assertTrue(isinstance(data, HttpResponseRedirect))
 
-    def has_hook(self):
+    def test_remove_hook_notoken(self):
         config.CALENDLY_WEBHOOK_TOKEN = None
         request = self.factory.post('/')
         request.user = self.user
@@ -122,6 +122,18 @@ class HookAdminTests(TestCase):
         with patch('urllib.request.urlopen', return_value=response) as urlopen:
             data = remove_hook(request, 1)
             self.assertTrue(isinstance(data, HttpResponseBadRequest))
+
+    def test_remove_hook_error(self):
+        config.CALENDLY_WEBHOOK_TOKEN = '1'
+        request = self.factory.post('/')
+        request.user = self.user
+        response = BytesIO(b'')
+        response.status = 404
+
+        with patch('urllib.request.urlopen', return_value=response) as urlopen:
+            data = remove_hook(request, 1)
+            self.assertTrue(isinstance(data, HttpResponse))
+            self.assertEqual(data.status_code, 404)
 
 
 class HookPostTests(TestCase):
