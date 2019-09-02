@@ -11,7 +11,7 @@ from bookings.models import Booking, CancelledBooking
 
 from import_export import fields, resources
 from import_export.widgets import ForeignKeyWidget
-from import_export.admin import ImportExportModelAdmin
+from import_export.admin import ImportExportModelAdmin, ImportExportMixin
 from bookings.admin import BookingAdmin, CancelledBookingAdmin
 
 from .admin_decorators import admin_link
@@ -191,8 +191,18 @@ class CancelledBookingCalendlyInline(BookingCalendlyInline):
         return False
 
 
-class BookingCalendlyAdmin(BookingAdmin):
+class BookingCalendlyIEResource(resources.ModelResource):
+    class Meta:
+        model = Booking
+        fields = ('email', 'event_type_id',
+            'spot_start', 'spot_end', 'booked_at',
+            'approval_status', 'approval_protected',
+            'calendly_data__calendly_uuid', 'calendly_data__approval_group__name')
+
+
+class BookingCalendlyAdmin(ImportExportMixin, BookingAdmin):
     inlines = [BookingCalendlyInline]
+    resource_class = BookingCalendlyIEResource
 
 
 class CancelledBookingCalendlyAdmin(CancelledBookingAdmin):
