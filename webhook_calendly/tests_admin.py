@@ -1,5 +1,6 @@
 from django.test import TestCase, RequestFactory
 from django.urls import reverse
+from django.db.models import QuerySet
 from django.contrib.auth.models import User
 from django.contrib.admin.models import LogEntry, CHANGE
 from django.contrib.admin import ModelAdmin, AdminSite
@@ -10,7 +11,7 @@ from constance import config
 from bookings.models import Booking
 from .models import ApprovalGroup, Invitee, BookingCalendlyData
 from .admin_decorators import admin_link
-from .admin import GroupAdmin
+from .admin import GroupAdmin, InviteeAdmin
 
 def _message_user(request, message, *args, **kwargs):
     request._test_message = message
@@ -148,3 +149,17 @@ class CalendlyAdminTests(TestCase):
             user_id=self.user.id,
             action_flag=CHANGE
         ).count(), 0)
+
+    def test_group_queryset(self):
+        site = AdminSite()
+        ma = GroupAdmin(ApprovalGroup, site)
+        request = self.factory.get('/')
+        request.user = self.user
+        self.assertTrue(isinstance(ma.get_queryset(request), QuerySet))
+
+    def test_invitee_queryset(self):
+        site = AdminSite()
+        ma = InviteeAdmin(Invitee, site)
+        request = self.factory.get('/')
+        request.user = self.user
+        self.assertTrue(isinstance(ma.get_queryset(request), QuerySet))
