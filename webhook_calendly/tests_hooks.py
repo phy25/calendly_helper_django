@@ -5,10 +5,12 @@ from django.utils.dateparse import parse_datetime
 from django.contrib.admin.models import LogEntry
 from django.contrib.admin import ModelAdmin, AdminSite
 from constance import config
+from unittest.mock import patch
+from io import BytesIO
 
 from bookings.models import Booking
 from .admin import Hook, HookAdmin
-from .views.hooksmgr import get_hook_url
+from .views.hooksmgr import get_hook_url, ListHooksView
 import json
 
 
@@ -39,6 +41,14 @@ class HookAdminTests(TestCase):
         self.assertEqual(ma.has_change_permission(request), False)
         self.assertEqual(ma.has_view_permission(request), True)
         self.assertEqual(ma.has_delete_permission(request), True)
+
+    def test_get_queryset(self):
+        with patch('urllib.request.urlopen') as urlopen:
+            urlopen.return_value = BytesIO(b'{"data":[{"type":"hooks","id":12345,"attributes":{"url":"http://foo.bar/1","created_at":"2016-08-23T19:15:24Z","state":"active","events":["invitee.created","invitee.canceled"]}},{"type":"hooks","id":1234,"attributes":{"url":"http://foo.bar/2","created_at":"2016-02-11T19:10:12Z","state":"disabled","events":["invitee.created"]}}]}')
+            data = ListHooksView.get_queryset(None)
+            self.assertEqual(len(data), 2)
+            self.assertEqual(data[0]['attributes']['url'], 'http://foo.bar/1')
+            self.assertEqual(data[1]['attributes']['url'], 'http://foo.bar/2')
 
 
 class HookPostTests(TestCase):
