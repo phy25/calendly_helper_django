@@ -7,7 +7,6 @@ from django.contrib.auth.models import User
 from django.contrib.admin.models import LogEntry, CHANGE
 from django.contrib.admin import AdminSite
 from django.contrib.messages.storage.fallback import FallbackStorage
-from django.contrib.messages import get_messages
 from unittest.mock import Mock
 
 from .models import Booking, CancelledBooking
