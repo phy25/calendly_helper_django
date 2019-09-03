@@ -11,6 +11,7 @@ from io import BytesIO
 from urllib.request import HTTPError
 
 from bookings.models import Booking
+from .models import BookingCalendlyData
 from .admin import Hook, HookAdmin
 from .views.hooksmgr import get_hook_url, ListHooksView, add_hook, remove_hook
 import json
@@ -223,3 +224,40 @@ class HookPostTests(TestCase):
     def test_bad_event_field(self):
         response = self.client.post(reverse('webhook_post')+'?token='+config.WEBHOOK_TOKEN, data=self.json_bad.replace('"event":"invitee.created",', ''), content_type='application/json')
         self.assertEqual(response.status_code, 400)
+
+def _hookcanceltest_urlopen(url, data, *arg, **oargs):
+    return data
+
+class HookCancelTest(TestCase):
+    def setUp(self):
+        self.user = User.objects.create_superuser(
+            username='test', email='test@localhost', password='test')
+        config.APPROVAL_USER_ID = self.user.id
+        self.bc = BookingCalendlyData.objects.create(
+            calendly_uuid="1",
+            booking=Booking.objects.create(
+                email="a@localhost",
+                event_type_id="1",
+                spot_start="2019-01-01 14:30:00-0400",
+                spot_end="2019-01-01 14:40:00-0400",
+                approval_status=Booking.APPROVAL_STATUS_NEW,
+            ),
+        )
+
+    def test_cancel_200(self):
+        response = Mock()
+        response.status = 200
+
+        with patch('urllib.request.urlopen', return_value=response) as urlopen:
+            ret = self.bc.calendly_cancel(cancel_reason="", canceled_by="")
+            self.assertEqual(ret, True)
+
+    def test_cancel_with_no_by(self):
+        with patch('urllib.request.urlopen', _hookcanceltest_urlopen) as urlopen:
+            ret = self.bc.calendly_cancel(cancel_reason="", canceled_by="")
+            self.assertEqual(ret.cancellation.canceled_by, '')
+
+    def test_cancel_with_approval_by(self):
+        with patch('urllib.request.urlopen', _hookcanceltest_urlopen) as urlopen:
+            ret = self.bc.calendly_cancel(cancel_reason="", canceled_by=None)
+            self.assertEqual(ret.cancellation.canceled_by, 'test')

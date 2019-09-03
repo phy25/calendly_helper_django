@@ -2,9 +2,12 @@ from django.db import models, transaction
 from bookings.models import Booking
 from django.contrib.postgres.fields import JSONField
 from django.core.exceptions import ObjectDoesNotExist
+from django.contrib.auth.models import User
 from django.contrib.admin.models import LogEntry, CHANGE
 from django.contrib.contenttypes.models import ContentType
 from constance import config
+import urllib.request
+import json
 
 
 class ApprovalGroup(models.Model):
@@ -138,6 +141,20 @@ class BookingCalendlyData(models.Model):
 
     def __str__(self):
         return self.calendly_uuid
+
+    def calendly_cancel(self, cancel_reason="", canceled_by=None):
+        if canceled_by == None:
+            canceled_by = User.objects.get(id=config.APPROVAL_USER_ID).username
+
+        req = urllib.request.Request(url='https://calendly.com/api/booking/cancellations/'+str(self.calendly_uuid),
+            data=json.dumps({"cancellation":{"cancel_reason": cancel_reason, "canceled_by": canceled_by}}).encode(),
+            method='PUT', headers={"Accept": "application/json", "Content-Type": "application/json"},)
+
+        with urllib.request.urlopen(req) as f:
+            if f.status == 200:
+                return True
+            else:
+                return f.read().decode()
 
     def run_approval(self):
         # 1 - find group
