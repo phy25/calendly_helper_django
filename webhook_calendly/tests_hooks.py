@@ -225,8 +225,10 @@ class HookPostTests(TestCase):
         response = self.client.post(reverse('webhook_post')+'?token='+config.WEBHOOK_TOKEN, data=self.json_bad.replace('"event":"invitee.created",', ''), content_type='application/json')
         self.assertEqual(response.status_code, 400)
 
-def _hookcanceltest_urlopen(url, data, *arg, **oargs):
-    return data
+def _hookcanceltest_urlopen(request):
+    ret = BytesIO(request.data)
+    ret.status = 400
+    return ret
 
 class HookCancelTest(TestCase):
     def setUp(self):
@@ -245,7 +247,7 @@ class HookCancelTest(TestCase):
         )
 
     def test_cancel_200(self):
-        response = Mock()
+        response = BytesIO(b'')
         response.status = 200
 
         with patch('urllib.request.urlopen', return_value=response) as urlopen:
@@ -255,9 +257,9 @@ class HookCancelTest(TestCase):
     def test_cancel_with_no_by(self):
         with patch('urllib.request.urlopen', _hookcanceltest_urlopen) as urlopen:
             ret = self.bc.calendly_cancel(cancel_reason="", canceled_by="")
-            self.assertEqual(ret.cancellation.canceled_by, '')
+            self.assertTrue('"canceled_by": ""' in ret)
 
     def test_cancel_with_approval_by(self):
         with patch('urllib.request.urlopen', _hookcanceltest_urlopen) as urlopen:
             ret = self.bc.calendly_cancel(cancel_reason="", canceled_by=None)
-            self.assertEqual(ret.cancellation.canceled_by, 'test')
+            self.assertTrue('"canceled_by": "test"' in ret)
