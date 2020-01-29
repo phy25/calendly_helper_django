@@ -1,18 +1,18 @@
 language: python
+os: linux
 addons:
   postgresql: "9.4"
 python:
   - "3.6"
   - "3.7"
-  - "3.7-dev"
-  - "3.8-dev"
+  - "3.8"
+  - "3.9-dev"
   - "nightly"
 
-matrix:
+jobs:
   fast_finish: true
   allow_failures:
-    - python: "3.7-dev"
-    - python: "3.8-dev"
+    - python: "3.9-dev"
     - python: "nightly"
 
 # https://docs.travis-ci.com/user/caching/#before_cache-phase
